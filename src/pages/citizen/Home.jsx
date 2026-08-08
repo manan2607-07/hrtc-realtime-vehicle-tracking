@@ -19,8 +19,34 @@ export default function Home() {
   // Search logic
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const cleanDigits = searchQuery.replace(/\D/g, '');
     const results = [];
+
+    // Search buses by Bus Number, Registration, Driver Name, or Driver Phone
+    VEHICLES.forEach(vehicle => {
+      const busNumMatch = vehicle.busNumber.toLowerCase().includes(q) || (cleanDigits && vehicle.busNumber.includes(cleanDigits));
+      const regMatch = vehicle.registrationNo.toLowerCase().includes(q);
+      const driverNameMatch = vehicle.driver?.name?.toLowerCase().includes(q);
+      const cleanPhone = vehicle.driver?.phone ? vehicle.driver.phone.replace(/\D/g, '') : '';
+      const driverPhoneMatch = cleanDigits && cleanDigits.length >= 3 && cleanPhone.includes(cleanDigits);
+
+      if (busNumMatch || regMatch || driverNameMatch || driverPhoneMatch) {
+        const route = ROUTES.find(r => r.id === vehicle.routeId);
+        results.push({
+          type: 'bus',
+          data: {
+            ...vehicle,
+            routeNo: route?.routeNo,
+            routeName: route?.name,
+            matchedBy: driverPhoneMatch ? `Driver Phone: ${vehicle.driver?.phone}`
+                     : driverNameMatch ? `Driver: ${vehicle.driver?.name}`
+                     : busNumMatch ? `Bus Number: ${vehicle.busNumber}`
+                     : `Reg: ${vehicle.registrationNo}`,
+          }
+        });
+      }
+    });
 
     // Search routes
     ROUTES.forEach(route => {
@@ -84,7 +110,9 @@ export default function Home() {
   }));
 
   const handleResultClick = (result) => {
-    if (result.type === 'route') {
+    if (result.type === 'bus') {
+      navigate(`/track/${result.data.id}`);
+    } else if (result.type === 'route') {
       navigate(`/route/${result.data.id}`);
     } else if (result.type === 'stop') {
       navigate(`/stop/${result.data.id}`);
@@ -110,7 +138,7 @@ export default function Home() {
             <input
               className="search-bar__input"
               type="text"
-              placeholder={t('searchPlaceholder')}
+              placeholder="Search by Bus # (e.g. 101), Driver Phone, Driver Name, Route..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
               onFocus={() => setShowResults(true)}
@@ -125,16 +153,20 @@ export default function Home() {
                     className="search-bar__result-item"
                     onClick={() => handleResultClick(result)}
                   >
-                    <span>{result.type === 'route' ? '🚌' : '📍'}</span>
+                    <span>{result.type === 'bus' ? '📡' : result.type === 'route' ? '🚌' : '📍'}</span>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>
-                        {result.type === 'route'
+                        {result.type === 'bus'
+                          ? `${result.data.busNumber} (${result.data.registrationNo})`
+                          : result.type === 'route'
                           ? `Route ${result.data.routeNo}: ${result.data.name}`
                           : result.data.name
                         }
                       </div>
                       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-                        {result.type === 'route'
+                        {result.type === 'bus'
+                          ? `${result.data.matchedBy} · Rte ${result.data.routeNo}`
+                          : result.type === 'route'
                           ? `${result.data.origin} → ${result.data.destination}`
                           : `Stop Code: ${result.data.code} · Route ${result.data.routeNo}`
                         }

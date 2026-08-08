@@ -17,9 +17,13 @@ export default function FleetMap() {
   const [filterRoute, setFilterRoute] = useState('all');
   const [filterFuel, setFilterFuel] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedBus, setSelectedBus] = useState(null);
 
   const filteredBuses = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const cleanDigits = searchQuery.replace(/\D/g, '');
+
     return Object.values(busStates).filter(bs => {
       const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
       if (!vehicle) return false;
@@ -27,9 +31,19 @@ export default function FleetMap() {
       if (filterRoute !== 'all' && bs.routeId !== filterRoute) return false;
       if (filterFuel !== 'all' && vehicle.fuelType !== filterFuel) return false;
       if (filterStatus !== 'all' && bs.status !== filterStatus) return false;
+
+      if (q) {
+        const busNoMatch = vehicle.busNumber.toLowerCase().includes(q) || (cleanDigits && vehicle.busNumber.includes(cleanDigits));
+        const regMatch = vehicle.registrationNo.toLowerCase().includes(q);
+        const driverNameMatch = vehicle.driver?.name?.toLowerCase().includes(q);
+        const cleanPhone = vehicle.driver?.phone ? vehicle.driver.phone.replace(/\D/g, '') : '';
+        const driverPhoneMatch = cleanDigits && cleanDigits.length >= 3 && cleanPhone.includes(cleanDigits);
+        if (!busNoMatch && !regMatch && !driverNameMatch && !driverPhoneMatch) return false;
+      }
+
       return true;
     });
-  }, [busStates, filterDepot, filterRoute, filterFuel, filterStatus]);
+  }, [busStates, filterDepot, filterRoute, filterFuel, filterStatus, searchQuery]);
 
   const busesForMap = filteredBuses.map(bs => {
     const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
@@ -52,6 +66,14 @@ export default function FleetMap() {
 
       {/* Filters */}
       <div className="filter-bar">
+        <input
+          type="text"
+          className="search-bar__input"
+          style={{ width: '260px', padding: '6px 12px', fontSize: 'var(--font-size-xs)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+          placeholder="Filter by Bus #, Driver Name or Phone..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
         <select className="filter-bar__select" value={filterDepot} onChange={e => setFilterDepot(e.target.value)} id="filter-depot">
           <option value="all">{t('allDepots')}</option>
           {DEPOTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}

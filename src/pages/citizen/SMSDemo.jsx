@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { findStopByCode, ROUTES } from '../../simulation/routes';
-import { VEHICLES } from '../../simulation/vehicles';
+import { VEHICLES, findBusByDriverPhone, findBusByNumber } from '../../simulation/vehicles';
 import { formatETA, formatClockTime } from '../../simulation/eta';
 
 export default function SMSDemo() {
@@ -26,14 +26,39 @@ export default function SMSDemo() {
     setMessages(prev => [...prev, { type: 'sent', text: code }]);
     setInput('');
 
-    // Look up stop
+    // Look up stop, driver phone, or bus number
     setTimeout(() => {
+      // Check driver phone or bus number first
+      const busByPhone = findBusByDriverPhone(code);
+      const busByNum = findBusByNumber(code);
+      const targetBus = busByPhone || busByNum;
+
+      if (targetBus) {
+        const bs = busStates[targetBus.id];
+        const route = ROUTES.find(r => r.id === targetBus.routeId);
+        const nextEta = bs?.etas?.[0];
+
+        let response = `HRTC Live Telemetry Feed\n`;
+        response += `Bus: ${targetBus.busNumber} (${targetBus.registrationNo})\n`;
+        response += `Driver: ${targetBus.driver?.name} (${targetBus.driver?.phone})\n`;
+        response += `Route: Rte ${route?.routeNo} - ${route?.name}\n`;
+        response += `Status: ${bs?.status?.toUpperCase()} (${Math.round(bs?.speed || 0)} km/h)\n`;
+        if (nextEta) {
+          response += `Next Stop: ${nextEta.stopName}\n`;
+          response += `ETA: ${formatETA(nextEta.etaMinutes)} | Halt: ${nextEta.haltMinutes}m\n`;
+          response += `Arr: ${formatClockTime(nextEta.arrivalTime)} | Dep: ${formatClockTime(nextEta.departureTime)}\n`;
+        }
+        response += `\n✓ Live Driver Telemetry Feed Active`;
+        setMessages(prev => [...prev, { type: 'received', text: response }]);
+        return;
+      }
+
       const stop = findStopByCode(code);
 
       if (!stop) {
         setMessages(prev => [...prev, {
           type: 'received',
-          text: t('smsNoStop'),
+          text: `HRTC Info: No stop code, bus number, or driver phone found for "${code}".\n\nTry:\n- Stop Code: SML04\n- Bus No: 101\n- Driver Phone: 98160-12341`,
         }]);
         return;
       }

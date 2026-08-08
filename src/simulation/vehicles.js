@@ -359,3 +359,39 @@ export function getFleetEmissionsSummary() {
     cleanPercentage: Math.round((cleanCount / total) * 100),
   };
 }
+
+/**
+ * Find a bus by driver's phone number (handles formatted or unformatted inputs)
+ */
+export function findBusByDriverPhone(phoneQuery) {
+  if (!phoneQuery) return null;
+  const cleanQuery = phoneQuery.replace(/\D/g, ''); // strip non-digits
+  if (!cleanQuery) return null;
+
+  return VEHICLES.find(v => {
+    if (!v.driver?.phone) return false;
+    const cleanPhone = v.driver.phone.replace(/\D/g, '');
+    return cleanPhone.includes(cleanQuery) || cleanQuery.includes(cleanPhone.slice(-10));
+  });
+}
+
+/**
+ * Find a bus by bus number (e.g. "101", "Bus #101", "Bus 101")
+ */
+export function findBusByNumber(busNoQuery) {
+  if (!busNoQuery) return null;
+  const q = busNoQuery.trim().toLowerCase().replace(/bus\s*#?/g, '');
+  return VEHICLES.find(v => {
+    const busNum = v.busNumber.toLowerCase().replace(/bus\s*#?/g, '');
+    return busNum === q || v.busNumber.toLowerCase().includes(q);
+  });
+}
+
+/**
+ * Find buses matching a driver's name
+ */
+export function findBusesByDriverName(nameQuery) {
+  if (!nameQuery) return [];
+  const q = nameQuery.trim().toLowerCase();
+  return VEHICLES.filter(v => v.driver?.name?.toLowerCase().includes(q));
+}
