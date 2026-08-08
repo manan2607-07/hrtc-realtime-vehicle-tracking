@@ -4,7 +4,7 @@ import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ROUTES } from '../../simulation/routes';
 import { VEHICLES } from '../../simulation/vehicles';
-import { formatETA } from '../../simulation/eta';
+import { formatETA, formatClockTime } from '../../simulation/eta';
 import MapView from '../../components/MapView';
 import SustainabilityBadge from '../../components/SustainabilityBadge';
 import ETABadge from '../../components/ETABadge';
@@ -26,7 +26,7 @@ export default function LiveTrack() {
     if (!busState?.lastPingTime) return null;
     const age = Math.round((Date.now() - busState.lastPingTime) / 1000);
     return age;
-  }, [busState?.lastPingTime, busStates]); // Re-evaluate on each tick
+  }, [busState?.lastPingTime, busStates]);
 
   if (!busState || !vehicle || !route) {
     return (
@@ -68,7 +68,7 @@ export default function LiveTrack() {
     addNotification({
       type: 'success',
       title: t('notificationSet'),
-      message: `${vehicle.registrationNo} — ${route.name}`,
+      message: `${vehicle.busNumber} (${vehicle.registrationNo}) — ${route.name}`,
     });
   };
 
@@ -100,9 +100,12 @@ export default function LiveTrack() {
               fontSize: 'var(--font-size-md)',
               fontWeight: 700,
             }}>
-              {route.routeNo}
+              Route {route.routeNo}
             </span>
-            {vehicle.registrationNo}
+            <span style={{ color: 'var(--color-primary)' }}>{vehicle.busNumber}</span>
+            <span style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              ({vehicle.registrationNo})
+            </span>
           </h1>
           <div className="flex flex--gap-2 flex--wrap mt-4" style={{ marginTop: 'var(--space-2)' }}>
             <SustainabilityBadge fuelType={vehicle.fuelType} emissionStandard={vehicle.emissionStandard} />
@@ -143,8 +146,45 @@ export default function LiveTrack() {
         </div>
       </div>
 
+      {/* Driver Information & Speed Cards */}
+      <div className="grid grid--4 mb-4">
+        <div className="stat-card" style={{ gridColumn: 'span 2' }}>
+          <div className="stat-card__label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <span>👤 Driver Information</span>
+          </div>
+          <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)' }}>
+            <div>
+              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                Emp ID: <strong>{vehicle.driver?.empId}</strong> · Exp: <strong>{vehicle.driver?.experienceYears} yrs</strong>
+              </div>
+            </div>
+            {vehicle.driver?.phone && (
+              <a
+                href={`tel:${vehicle.driver.phone}`}
+                className="btn btn--outline btn--sm"
+                style={{ fontSize: 'var(--font-size-xs)' }}
+              >
+                📞 {vehicle.driver.phone}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card__label">Speed</div>
+          <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__label">{t('lastUpdated')}</div>
+          <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
+            {pingAge != null ? (pingAge < 60 ? `${pingAge}${t('secondsAgo')}` : `${Math.round(pingAge / 60)}${t('minutesAgo')}`) : '—'}
+          </div>
+        </div>
+      </div>
+
       {/* Map */}
-      <div className="card mb-4">
+      <div className="card mb-6">
         <MapView
           center={[busState.lat, busState.lng]}
           zoom={14}
@@ -157,32 +197,10 @@ export default function LiveTrack() {
         />
       </div>
 
-      {/* Speed & status bar */}
-      <div className="grid grid--4 mb-6">
-        <div className="stat-card">
-          <div className="stat-card__label">Speed</div>
-          <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card__label">{t('finalDestination')}</div>
-          <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{busState.direction > 0 ? route.destination : route.origin}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card__label">{t('fuelType')}</div>
-          <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{vehicle.fuelType}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card__label">{t('lastUpdated')}</div>
-          <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
-            {pingAge != null ? (pingAge < 60 ? `${pingAge}${t('secondsAgo')}` : `${Math.round(pingAge / 60)}${t('minutesAgo')}`) : '—'}
-          </div>
-        </div>
-      </div>
-
-      {/* Upcoming stops timeline */}
+      {/* Upcoming stops timeline with Arrival, Halt & Departure Times */}
       <div className="card">
         <div className="card__header">
-          <span className="card__title">{t('upcomingStops')}</span>
+          <span className="card__title">📍 {t('upcomingStops')} — Schedule & Live Arrival Times</span>
           <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>
             {route.origin} → {route.destination}
           </span>
@@ -193,19 +211,27 @@ export default function LiveTrack() {
               <div
                 key={eta.stopId}
                 className="stop-timeline__item"
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', padding: 'var(--space-3) 0' }}
                 onClick={() => navigate(`/stop/${eta.stopId}`)}
               >
                 <div className={`stop-timeline__dot ${idx === 0 ? 'stop-timeline__dot--next' : ''}`} />
-                <span className="stop-timeline__name">
-                  {eta.stopName}
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginLeft: 'var(--space-2)' }}>
-                    ({eta.stopCode})
-                  </span>
-                </span>
-                <span className="stop-timeline__eta">
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>
+                    {eta.stopName}
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginLeft: 'var(--space-2)' }}>
+                      ({eta.stopCode})
+                    </span>
+                  </div>
+                  {/* Arrival, Halt & Departure details */}
+                  <div className="flex flex--gap-4 mt-1" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                    <span>🛬 Arrival: <strong>{formatClockTime(eta.arrivalTime)}</strong></span>
+                    <span>🛑 Halt: <strong>{eta.haltMinutes} min</strong></span>
+                    <span>🛫 Departure: <strong>{formatClockTime(eta.departureTime)}</strong></span>
+                  </div>
+                </div>
+                <div className="stop-timeline__eta" style={{ textAlign: 'right' }}>
                   <ETABadge etaMinutes={eta.etaMinutes} confidence={eta.confidence} showLabel={false} />
-                </span>
+                </div>
               </div>
             ))}
             {(!busState.etas || busState.etas.length === 0) && (

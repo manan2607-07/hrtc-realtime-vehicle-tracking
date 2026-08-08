@@ -95,7 +95,7 @@ export default function FleetMap() {
           <div className="card" style={{ width: '320px', flexShrink: 0, alignSelf: 'flex-start' }}>
             <div className="card__header" style={{ background: selectedRoute.color, color: 'white' }}>
               <span style={{ fontWeight: 700 }}>
-                {selectedVehicle.registrationNo}
+                {selectedVehicle.busNumber} ({selectedVehicle.registrationNo})
               </span>
               <span className={`badge badge--${selectedBusState.status}`}>
                 {selectedBusState.status}
@@ -107,7 +107,14 @@ export default function FleetMap() {
                 <div style={{ fontWeight: 600 }}>Route {selectedRoute.routeNo}: {selectedRoute.name}</div>
               </div>
               <div style={{ marginBottom: 'var(--space-3)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Vehicle</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Driver Information</div>
+                <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>👤 {selectedVehicle.driver?.name}</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  ID: {selectedVehicle.driver?.empId} · 📞 {selectedVehicle.driver?.phone}
+                </div>
+              </div>
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Vehicle Model</div>
                 <div style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)' }}>{selectedVehicle.model}</div>
                 {selectedVehicle.brandName && <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-accent)' }}>{selectedVehicle.brandName}</div>}
               </div>
@@ -116,23 +123,20 @@ export default function FleetMap() {
                 <SustainabilityBadge fuelType={selectedVehicle.fuelType} emissionStandard={selectedVehicle.emissionStandard} />
               </div>
               <div style={{ marginBottom: 'var(--space-3)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Speed</div>
-                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-lg)' }}>
-                  {Math.round(selectedBusState.speed)} {t('kmh')}
-                </div>
-              </div>
-              <div style={{ marginBottom: 'var(--space-3)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Depot</div>
-                <div style={{ fontSize: 'var(--font-size-sm)' }}>
-                  {DEPOTS.find(d => d.id === selectedVehicle.depotId)?.name}
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Speed & Depot</div>
+                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-md)' }}>
+                  {Math.round(selectedBusState.speed)} {t('kmh')} · <span style={{ fontWeight: 400, fontSize: 'var(--font-size-xs)' }}>{DEPOTS.find(d => d.id === selectedVehicle.depotId)?.name}</span>
                 </div>
               </div>
               {selectedBusState.etas?.[0] && (
-                <div style={{ marginBottom: 'var(--space-3)' }}>
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Next Stop</div>
+                <div style={{ marginBottom: 'var(--space-3)', background: 'var(--color-background)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Next Stop & Timings</div>
                   <div style={{ fontWeight: 600 }}>{selectedBusState.etas[0].stopName}</div>
-                  <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-accent)' }}>
-                    ETA: {formatETA(selectedBusState.etas[0].etaMinutes)}
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-accent)', marginTop: '2px' }}>
+                    ETA: <strong>{formatETA(selectedBusState.etas[0].etaMinutes)}</strong>
+                  </div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                    🛬 Arr: <strong>{new Date(selectedBusState.etas[0].arrivalTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong> | 🛑 Halt: <strong>{selectedBusState.etas[0].haltMinutes}m</strong> | 🛫 Dep: <strong>{new Date(selectedBusState.etas[0].departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong>
                   </div>
                 </div>
               )}

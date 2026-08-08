@@ -55,29 +55,36 @@ export default function RouteManager() {
 
               {/* Assigned vehicles */}
               <h3 className="section-title" style={{ fontSize: 'var(--font-size-sm)' }}>
-                🚌 Assigned Vehicles ({routeVehicles.length})
+                🚌 Assigned Vehicles & Drivers ({routeVehicles.length})
               </h3>
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>Bus No.</th>
                     <th>Registration</th>
+                    <th>Driver Name & Contact</th>
                     <th>Model</th>
                     <th>Capacity</th>
                     <th>Fuel/Emission</th>
-                    <th>Year</th>
                   </tr>
                 </thead>
                 <tbody>
                   {routeVehicles.map(v => (
                     <tr key={v.id}>
+                      <td><strong style={{ color: 'var(--color-primary)' }}>{v.busNumber}</strong></td>
                       <td style={{ fontWeight: 600 }}>{v.registrationNo}</td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>👤 {v.driver?.name}</div>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                          ID: {v.driver?.empId} · 📞 {v.driver?.phone}
+                        </div>
+                      </td>
                       <td>
                         {v.model}
                         {v.brandName && <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--font-size-xs)', color: 'var(--color-accent)' }}>({v.brandName})</span>}
                       </td>
                       <td>{v.capacity} seats</td>
                       <td><SustainabilityBadge fuelType={v.fuelType} emissionStandard={v.emissionStandard} /></td>
-                      <td>{v.yearOfMfg}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -159,7 +159,12 @@ export function computeETAs(busState, isTouristSeason = null) {
     else if (isStale) confidence = 'estimate';
     else if (etas.length > 3) confidence = 'estimate'; // Further stops are naturally less certain
 
-    const arrivalTime = new Date(now + cumulativeMinutes * 60000);
+    const haltMinutes = stops[i].haltMin ?? (
+      stops[i].name.includes('ISBT') || stops[i].name.includes('Stand') ? 5 : 2
+    );
+
+    const arrivalDate = new Date(now + cumulativeMinutes * 60000);
+    const departureDate = new Date(now + (cumulativeMinutes + haltMinutes) * 60000);
 
     etas.push({
       stopId: stops[i].id,
@@ -168,12 +173,23 @@ export function computeETAs(busState, isTouristSeason = null) {
       seqNo: stops[i].seqNo,
       etaMinutes: Math.round(cumulativeMinutes),
       confidence,
-      arrivalTime: arrivalTime.toISOString(),
+      arrivalTime: arrivalDate.toISOString(),
+      departureTime: departureDate.toISOString(),
+      haltMinutes,
       distanceKm: Math.round(segmentDist * 10) / 10,
     });
   }
 
   return etas;
+}
+
+/**
+ * Format clock time (e.g., "10:15 AM")
+ */
+export function formatClockTime(isoString) {
+  if (!isoString) return '--:--';
+  const d = new Date(isoString);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 /**

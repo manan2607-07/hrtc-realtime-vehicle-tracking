@@ -191,21 +191,26 @@ export default function Reports() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>Bus No.</th>
                   <th>Reg. No.</th>
+                  <th>Driver</th>
                   <th>Model</th>
-                  <th>Year</th>
                   <th>Fuel / Emission</th>
                 </tr>
               </thead>
               <tbody>
                 {VEHICLES.map(v => (
                   <tr key={v.id}>
+                    <td><strong style={{ color: 'var(--color-primary)' }}>{v.busNumber}</strong></td>
                     <td style={{ fontWeight: 600, fontSize: 'var(--font-size-xs)' }}>{v.registrationNo}</td>
+                    <td style={{ fontSize: 'var(--font-size-xs)' }}>
+                      <div style={{ fontWeight: 600 }}>👤 {v.driver?.name}</div>
+                      <div style={{ color: 'var(--color-text-muted)' }}>{v.driver?.empId}</div>
+                    </td>
                     <td style={{ fontSize: 'var(--font-size-xs)' }}>
                       {v.model}
                       {v.brandName && <span style={{ color: 'var(--color-accent)', marginLeft: 4 }}>({v.brandName})</span>}
                     </td>
-                    <td style={{ fontSize: 'var(--font-size-xs)' }}>{v.yearOfMfg}</td>
                     <td>
                       <SustainabilityBadge fuelType={v.fuelType} emissionStandard={v.emissionStandard} />
                     </td>

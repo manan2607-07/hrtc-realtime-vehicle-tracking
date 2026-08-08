@@ -3,7 +3,7 @@ import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { findStopByCode, ROUTES } from '../../simulation/routes';
 import { VEHICLES } from '../../simulation/vehicles';
-import { formatETA } from '../../simulation/eta';
+import { formatETA, formatClockTime } from '../../simulation/eta';
 
 export default function SMSDemo() {
   const { busStates } = useSimulation();
@@ -63,9 +63,10 @@ export default function SMSDemo() {
       let response = `HRTC Info - ${stop.name}\nStop Code: ${stop.code}\n\n`;
       top3.forEach((b, i) => {
         const conf = b.eta.confidence === 'live' ? '✓' : '~';
-        response += `${i + 1}. Rte ${b.route.routeNo} → ${b.busState.direction > 0 ? b.route.destination : b.route.origin}\n`;
-        response += `   Bus: ${b.vehicle.registrationNo}\n`;
-        response += `   ETA: ${formatETA(b.eta.etaMinutes)} ${conf}\n`;
+        response += `${i + 1}. ${b.vehicle.busNumber} (${b.vehicle.registrationNo}) · Rte ${b.route.routeNo}\n`;
+        response += `   Driver: ${b.vehicle.driver?.name || 'Assigned'}\n`;
+        response += `   ETA: ${formatETA(b.eta.etaMinutes)} ${conf} | Halt: ${b.eta.haltMinutes}m\n`;
+        response += `   Arr: ${formatClockTime(b.eta.arrivalTime)} | Dep: ${formatClockTime(b.eta.departureTime)}\n`;
         response += `   ${b.vehicle.fuelType === 'Electric' ? 'Electric' : b.vehicle.emissionStandard + ' ' + b.vehicle.fuelType}\n`;
         if (i < top3.length - 1) response += '\n';
       });

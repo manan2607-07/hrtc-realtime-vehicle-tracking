@@ -227,7 +227,15 @@ export default function Home() {
                   {route?.routeNo || '?'}
                 </div>
                 <div className="bus-item__info">
-                  <div className="bus-item__reg">{vehicle?.registrationNo}</div>
+                  <div className="bus-item__reg" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{vehicle?.busNumber}</span>
+                    <span>({vehicle?.registrationNo})</span>
+                    {vehicle?.driver?.name && (
+                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 400 }}>
+                        👤 {vehicle.driver.name}
+                      </span>
+                    )}
+                  </div>
                   <div className="bus-item__route-name">
                     {route?.name} · {route?.origin} → {route?.destination}
                   </div>
