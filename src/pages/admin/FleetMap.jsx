@@ -136,7 +136,7 @@ export default function FleetMap() {
                     ETA: <strong>{formatETA(selectedBusState.etas[0].etaMinutes)}</strong>
                   </div>
                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                    🛬 Arr: <strong>{new Date(selectedBusState.etas[0].arrivalTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong> | 🛑 Halt: <strong>{selectedBusState.etas[0].haltMinutes}m</strong> | 🛫 Dep: <strong>{new Date(selectedBusState.etas[0].departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong>
+                    Arr: <strong>{new Date(selectedBusState.etas[0].arrivalTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong> | Halt: <strong>{selectedBusState.etas[0].haltMinutes}m</strong> | Dep: <strong>{new Date(selectedBusState.etas[0].departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong>
                   </div>
                 </div>
               )}

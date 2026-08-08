@@ -224,9 +224,9 @@ export default function LiveTrack() {
                   </div>
                   {/* Arrival, Halt & Departure details */}
                   <div className="flex flex--gap-4 mt-1" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                    <span>🛬 Arrival: <strong>{formatClockTime(eta.arrivalTime)}</strong></span>
-                    <span>🛑 Halt: <strong>{eta.haltMinutes} min</strong></span>
-                    <span>🛫 Departure: <strong>{formatClockTime(eta.departureTime)}</strong></span>
+                    <span>Arrival: <strong>{formatClockTime(eta.arrivalTime)}</strong></span>
+                    <span>Halt: <strong>{eta.haltMinutes} min</strong></span>
+                    <span>Departure: <strong>{formatClockTime(eta.departureTime)}</strong></span>
                   </div>
                 </div>
                 <div className="stop-timeline__eta" style={{ textAlign: 'right' }}>
