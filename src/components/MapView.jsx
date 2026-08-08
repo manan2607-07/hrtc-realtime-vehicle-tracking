@@ -44,11 +44,29 @@ export default function MapView({
     }).setView(center, Math.max(zoom, 5));
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: 'Official India Boundaries (Survey of India) · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       minZoom: 5,
       maxZoom: 18,
       bounds: INDIA_BOUNDS,
     }).addTo(map);
+
+    // Overlay official Survey of India national boundary
+    fetch('/geo/india-official-boundary.json')
+      .then(res => res.json())
+      .then(data => {
+        if (!mapInstanceRef.current) return;
+        L.geoJSON(data, {
+          style: {
+            color: '#B22234',
+            weight: 2.5,
+            opacity: 0.85,
+            dashArray: '6, 4',
+            fillColor: '#1A5276',
+            fillOpacity: 0.02,
+          }
+        }).addTo(mapInstanceRef.current);
+      })
+      .catch(err => console.warn('Could not load official India boundary overlay:', err));
 
     mapInstanceRef.current = map;
 
