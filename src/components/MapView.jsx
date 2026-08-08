@@ -2,12 +2,17 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+const INDIA_BOUNDS = L.latLngBounds(
+  L.latLng(6.0, 68.0),   // South-West corner of India
+  L.latLng(37.5, 97.5)   // North-East corner of India
+);
+
 /**
  * Reusable Leaflet map component
- * Supports: single bus tracking, fleet view, route display, stop markers
+ * Restricted to India geographic boundaries
  */
 export default function MapView({
-  center = [31.1048, 77.1650], // Default: Shimla
+  center = [31.1048, 77.1650], // Default: Shimla, HP
   zoom = 13,
   buses = [],          // Array of { id, lat, lng, heading, status, registrationNo, routeColor }
   routes = [],         // Array of { id, waypoints, color }
@@ -32,11 +37,17 @@ export default function MapView({
       preferCanvas: true,
       zoomControl: true,
       attributionControl: true,
-    }).setView(center, zoom);
+      maxBounds: INDIA_BOUNDS,
+      maxBoundsViscosity: 1.0,
+      minZoom: 5,
+      maxZoom: 18,
+    }).setView(center, Math.max(zoom, 5));
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      minZoom: 5,
       maxZoom: 18,
+      bounds: INDIA_BOUNDS,
     }).addTo(map);
 
     mapInstanceRef.current = map;
