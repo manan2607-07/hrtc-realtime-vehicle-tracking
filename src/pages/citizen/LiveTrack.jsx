@@ -150,19 +150,24 @@ return (
       </div>
     </div>
 
-    {/* Driver Info (Customer View — Private details hidden) */}
+    {/* Driver & Crew Info */}
     <div className="grid grid--4 mb-4">
       <div className="stat-card" style={{ gridColumn: 'span 2' }}>
-        <div className="stat-card__label"> Driver on Duty</div>
+        <div className="stat-card__label">Driver & Conductor Details</div>
         <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
+            <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>
+              Driver: {vehicle.driver?.name}
+            </div>
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+              Driver Phone: <strong>{vehicle.driver?.phone}</strong> · Emp ID: {vehicle.driver?.empId}
+            </div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-              {vehicle.driver?.experienceYears} years experience · {vehicle.driver?.badge}
+              {vehicle.driver?.experienceYears} yrs exp · {vehicle.driver?.badge}
             </div>
             {vehicle.driver?.conductor && (
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                Conductor: {vehicle.driver.conductor.name}
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                Conductor: <strong>{vehicle.driver.conductor.name}</strong> · Phone: <strong>{vehicle.driver.conductor.phone}</strong> (ID: {vehicle.driver.conductor.empId})
               </div>
             )}
           </div>

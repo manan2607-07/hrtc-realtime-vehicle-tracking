@@ -265,7 +265,7 @@ return (
                   <span>({vehicle?.registrationNo})</span>
                   {vehicle?.driver?.name && (
                     <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 400 }}>
-                       {vehicle.driver.name}
+                      Driver: {vehicle.driver.name} ({vehicle.driver.phone})
                     </span>
                   )}
                 </div>
