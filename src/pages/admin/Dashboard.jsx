@@ -69,11 +69,11 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex--gap-2">
-          <button className="btn btn--outline btn--sm" onClick={() => navigate('/driver')}>
-            🚍 Open Driver Panel
+          <button className="btn btn--primary btn--sm" onClick={() => navigate('/admin/staff')}>
+            👨‍✈️ Staff Directory & Locations
           </button>
-          <button className="btn btn--outline btn--sm" onClick={() => navigate('/conductor')}>
-            🎫 Open Conductor Panel
+          <button className="btn btn--outline btn--sm" onClick={() => navigate('/admin/fleet')}>
+            📡 Fleet Map
           </button>
         </div>
       </div>

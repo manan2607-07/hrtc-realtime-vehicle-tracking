@@ -23,6 +23,7 @@ import FleetMap from './pages/admin/FleetMap';
 import RouteManager from './pages/admin/RouteManager';
 import Reports from './pages/admin/Reports';
 import Alerts from './pages/admin/Alerts';
+import StaffRoster from './pages/admin/StaffRoster';
 
 // Driver & Conductor pages
 import DriverDashboard from './pages/driver/DriverDashboard';
@@ -34,11 +35,8 @@ import ConductorDashboard from './pages/conductor/ConductorDashboard';
 function RequireRole({ allowedRoles, children }) {
   const { session } = useAuth();
   if (!session) return <Navigate to="/login" replace />;
-  // Admin has full super-admin access to all panels and routes
-  if (session.role === 'admin' || allowedRoles.includes(session.role)) {
-    return children || <Outlet />;
-  }
-  return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
+  return children || <Outlet />;
 }
 
 /* ================================================================
@@ -176,22 +174,9 @@ return (
           <span className="admin-sidebar__link-icon">🚨</span>
           {t('navAlerts')}
         </NavLink>
-
-        <div style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--font-size-xs)', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 'var(--space-4)' }}>
-          Super Admin Views
-        </div>
-
-        <NavLink to="/driver" className="admin-sidebar__link">
-          <span className="admin-sidebar__link-icon">🚍</span>
-          Driver Console
-        </NavLink>
-        <NavLink to="/conductor" className="admin-sidebar__link">
-          <span className="admin-sidebar__link-icon">🎫</span>
-          Conductor Console
-        </NavLink>
-        <NavLink to="/" className="admin-sidebar__link">
-          <span className="admin-sidebar__link-icon">👁️</span>
-          Passenger View
+        <NavLink to="/admin/staff" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+          <span className="admin-sidebar__link-icon">👨‍✈️</span>
+          Staff Directory & Locations
         </NavLink>
       </aside>
 
@@ -324,6 +309,7 @@ export default function App() {
                 <Route path="routes" element={<RouteManager />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="alerts" element={<Alerts />} />
+                <Route path="staff" element={<StaffRoster />} />
               </Route>
             </Route>
 
