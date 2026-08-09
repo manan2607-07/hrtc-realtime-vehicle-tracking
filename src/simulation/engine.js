@@ -1,57 +1,32 @@
 /**
- * GPS Simulation Engine
- * Generates realistic bus movement along HP routes:
- * - Variable speed based on terrain/gradient
+ * Real-Time Continuous GPS Simulation Engine
+ * Generates smooth, realistic physics-based bus movement along HP routes:
+ * - Continuous distance-based (meters per tick) GPS coordinate interpolation
+ * - Smooth speed transitions based on terrain/gradient
  * - Signal loss in tunnels/valleys
- * - Random perturbation for realism
- * - Anomaly events (breakdowns, delays)
+ * - Persistent simulation state (does not reset on page navigation or re-render)
  */
 
 import { ROUTES } from './routes.js';
 import { VEHICLES, VEHICLE_STATUS } from './vehicles.js';
 import { computeETAs } from './eta.js';
 
-const TICK_INTERVAL_MS = 2000; // Simulation tick every 2 seconds
+const TICK_INTERVAL_MS = 2000; // 2 seconds per tick
 
 /**
- * Initialize simulation state for all buses
+ * Calculate distance in meters between two lat/lng points (Haversine formula)
  */
-function initBusStates() {
-  const states = {};
-
-  VEHICLES.forEach((vehicle, idx) => {
-    const route = ROUTES.find(r => r.id === vehicle.routeId);
-    if (!route) return;
-
-    // Stagger buses along the route so they're not all at the start
-    const totalWaypoints = route.waypoints.length;
-    const busesOnRoute = VEHICLES.filter(v => v.routeId === vehicle.routeId);
-    const positionInGroup = busesOnRoute.indexOf(vehicle);
-    const spacing = Math.floor(totalWaypoints / (busesOnRoute.length + 1));
-    const startIdx = Math.min((positionInGroup + 1) * spacing, totalWaypoints - 2);
-
-    states[vehicle.id] = {
-      vehicleId: vehicle.id,
-      routeId: vehicle.routeId,
-      waypointIdx: startIdx,
-      lat: route.waypoints[startIdx][0],
-      lng: route.waypoints[startIdx][1],
-      speed: 20 + Math.random() * 15, // km/h
-      heading: 0,
-      lastPingTime: Date.now(),
-      status: VEHICLE_STATUS.RUNNING,
-      isSignalLost: false,
-      signalLostSince: null,
-      tripId: `trip-${vehicle.id}-${Date.now()}`,
-      direction: 1, // 1 = forward, -1 = reverse (for looping)
-      stationaryTicks: 0,
-      delayMinutes: 0,
-      anomalyType: null,
-      etas: [],
-    };
-  });
-
-  return states;
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // Earth radius in meters
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
@@ -72,6 +47,7 @@ function calcHeading(lat1, lng1, lat2, lng2) {
  * Check if a waypoint index is in a signal loss zone
  */
 function checkSignalLoss(route, wpIdx) {
+  if (!route.signalLossZones) return false;
   for (const zone of route.signalLossZones) {
     if (wpIdx >= zone.startIdx && wpIdx <= zone.endIdx) {
       return Math.random() < zone.probability;
@@ -81,7 +57,48 @@ function checkSignalLoss(route, wpIdx) {
 }
 
 /**
- * Advance one bus by one tick
+ * Initialize simulation state for all buses with fixed, realistic initial positions
+ */
+function initBusStates() {
+  const states = {};
+
+  VEHICLES.forEach((vehicle, idx) => {
+    const route = ROUTES.find(r => r.id === vehicle.routeId);
+    if (!route) return;
+
+    // Stagger buses evenly along route
+    const totalWaypoints = route.waypoints.length;
+    const busesOnRoute = VEHICLES.filter(v => v.routeId === vehicle.routeId);
+    const positionInGroup = busesOnRoute.indexOf(vehicle);
+    const spacing = Math.floor(totalWaypoints / (busesOnRoute.length + 1));
+    const startIdx = Math.min((positionInGroup + 1) * spacing, totalWaypoints - 2);
+
+    states[vehicle.id] = {
+      vehicleId: vehicle.id,
+      routeId: vehicle.routeId,
+      waypointIdx: startIdx,
+      lat: route.waypoints[startIdx][0],
+      lng: route.waypoints[startIdx][1],
+      speed: 25, // km/h
+      heading: 0,
+      lastPingTime: Date.now(),
+      status: VEHICLE_STATUS.RUNNING,
+      isSignalLost: false,
+      signalLostSince: null,
+      tripId: `trip-${vehicle.id}`,
+      direction: 1, // 1 = forward, -1 = reverse
+      stationaryTicks: 0,
+      delayMinutes: 0,
+      anomalyType: null,
+      etas: [],
+    };
+  });
+
+  return states;
+}
+
+/**
+ * Advance one bus smoothly by exact meters traveled in tick
  */
 function tickBus(busState, isTouristSeason) {
   const route = ROUTES.find(r => r.id === busState.routeId);
@@ -89,12 +106,12 @@ function tickBus(busState, isTouristSeason) {
 
   const newState = { ...busState };
   const waypoints = route.waypoints;
+  const totalWp = waypoints.length;
 
   // Handle breakdown state — bus stays stationary
   if (newState.status === VEHICLE_STATUS.BREAKDOWN) {
     newState.stationaryTicks += 1;
-    // Auto-resolve after ~60 ticks (2 minutes)
-    if (newState.stationaryTicks > 60) {
+    if (newState.stationaryTicks > 40) { // ~80s breakdown
       newState.status = VEHICLE_STATUS.RUNNING;
       newState.anomalyType = null;
       newState.stationaryTicks = 0;
@@ -102,69 +119,67 @@ function tickBus(busState, isTouristSeason) {
     return newState;
   }
 
-  // Random chance of breakdown (very low)
-  if (Math.random() < 0.0005 && newState.status === VEHICLE_STATUS.RUNNING) {
-    newState.status = VEHICLE_STATUS.BREAKDOWN;
-    newState.anomalyType = 'breakdown';
-    newState.stationaryTicks = 0;
-    return newState;
-  }
-
-  // Determine speed for this segment with smooth transitions
+  // Determine target segment speed
   const seasonKey = isTouristSeason ? 'touristSeason' : 'normal';
   const speeds = route.segmentSpeeds[seasonKey];
   const segIdx = Math.min(newState.waypointIdx, speeds.length - 1);
-  const targetSpeed = speeds[segIdx] || 20;
+  const targetSpeed = speeds[segIdx] || 25;
 
-  // Smooth speed transitions (EMA) with subtle realistic variation (±5%)
-  let baseSpeed = (busState.speed || targetSpeed) * 0.85 + targetSpeed * 0.15;
-  baseSpeed *= 0.95 + Math.random() * 0.1;
+  // Smooth speed transitions (EMA) with subtle variation (±5%)
+  let currentSpeed = (newState.speed || targetSpeed) * 0.85 + targetSpeed * 0.15;
+  currentSpeed *= 0.96 + Math.random() * 0.08;
 
-  // Simulate stop dwell time — slow down near stops
+  // Check near stop for dwell time
   const nearStop = route.stops.some(s => {
-    const d = Math.sqrt(
-      (s.lat - newState.lat) ** 2 + (s.lng - newState.lng) ** 2
-    );
-    return d < 0.002; // ~200m
+    const d = Math.sqrt((s.lat - newState.lat) ** 2 + (s.lng - newState.lng) ** 2);
+    return d < 0.0015; // ~150m
   });
-  if (nearStop && Math.random() < 0.3) {
-    baseSpeed = 2 + Math.random() * 3; // Nearly stopped at stop
+
+  if (nearStop && Math.random() < 0.25) {
+    currentSpeed = 3 + Math.random() * 4; // slow down at stop
     newState.stationaryTicks += 1;
   } else {
     newState.stationaryTicks = 0;
   }
 
-  newState.speed = Math.round(baseSpeed * 10) / 10;
+  newState.speed = Math.round(currentSpeed * 10) / 10;
 
-  // Move along waypoints
-  // Speed is in km/h, tick is 2 seconds — but we advance by waypoint indices for simplicity
-  // Higher speed = advance more waypoints per tick
-  const advanceRate = Math.max(1, Math.round(baseSpeed / 15));
+  // Calculate physical distance traveled in this 2s tick (meters)
+  const metersPerSec = (newState.speed * 1000) / 3600;
+  const stepMeters = metersPerSec * (TICK_INTERVAL_MS / 1000);
 
-  let nextIdx = newState.waypointIdx + newState.direction * advanceRate;
+  // Next target waypoint index along route direction
+  let targetIdx = newState.waypointIdx + newState.direction;
 
-  // Bounce at route ends (loop back)
-  if (nextIdx >= waypoints.length) {
+  // Terminus handling (looping back at route ends)
+  if (targetIdx >= totalWp) {
     newState.direction = -1;
-    nextIdx = waypoints.length - 2;
-    newState.tripId = `trip-${newState.vehicleId}-${Date.now()}`;
-  } else if (nextIdx < 0) {
+    targetIdx = totalWp - 2;
+  } else if (targetIdx < 0) {
     newState.direction = 1;
-    nextIdx = 1;
-    newState.tripId = `trip-${newState.vehicleId}-${Date.now()}`;
+    targetIdx = 1;
   }
 
-  newState.waypointIdx = nextIdx;
-  const newPos = waypoints[nextIdx];
-  
-  // Calculate heading
-  newState.heading = calcHeading(newState.lat, newState.lng, newPos[0], newPos[1]);
-  
-  newState.lat = newPos[0];
-  newState.lng = newPos[1];
+  const targetWp = waypoints[targetIdx];
+  const distToTarget = haversineMeters(newState.lat, newState.lng, targetWp[0], targetWp[1]);
+
+  if (stepMeters >= distToTarget || distToTarget < 5) {
+    // Reached target waypoint -> update index & coordinates
+    newState.waypointIdx = targetIdx;
+    newState.lat = targetWp[0];
+    newState.lng = targetWp[1];
+  } else {
+    // Smoothly interpolate position towards target waypoint
+    const ratio = stepMeters / distToTarget;
+    newState.lat = newState.lat + (targetWp[0] - newState.lat) * ratio;
+    newState.lng = newState.lng + (targetWp[1] - newState.lng) * ratio;
+  }
+
+  // Calculate heading towards target waypoint
+  newState.heading = calcHeading(newState.lat, newState.lng, targetWp[0], targetWp[1]);
 
   // Check signal loss
-  const signalLost = checkSignalLoss(route, nextIdx);
+  const signalLost = checkSignalLoss(route, newState.waypointIdx);
   if (signalLost && !newState.isSignalLost) {
     newState.isSignalLost = true;
     newState.signalLostSince = Date.now();
@@ -175,28 +190,28 @@ function tickBus(busState, isTouristSeason) {
     newState.status = VEHICLE_STATUS.RUNNING;
   }
 
-  // Update ping time only if signal is not lost
+  // Update ping time if signal is fine
   if (!newState.isSignalLost) {
     newState.lastPingTime = Date.now();
   }
 
-  // Check if delayed (speed significantly below normal)
-  if (newState.speed < 8 && newState.status === VEHICLE_STATUS.RUNNING) {
+  // Check delay status
+  if (newState.speed < 10 && newState.status === VEHICLE_STATUS.RUNNING) {
     newState.status = VEHICLE_STATUS.DELAYED;
-    newState.delayMinutes = Math.round(5 + Math.random() * 15);
-  } else if (newState.speed >= 8 && newState.status === VEHICLE_STATUS.DELAYED) {
+    newState.delayMinutes = Math.round(5 + Math.random() * 10);
+  } else if (newState.speed >= 10 && newState.status === VEHICLE_STATUS.DELAYED) {
     newState.status = VEHICLE_STATUS.RUNNING;
     newState.delayMinutes = 0;
   }
 
-  // Compute ETAs
+  // Compute smooth ETAs for upcoming stops
   newState.etas = computeETAs(newState, isTouristSeason);
 
   return newState;
 }
 
 /**
- * Generate anomaly events for the admin dashboard
+ * Generate anomaly events for admin dashboard
  */
 function generateAnomalyEvents(prevStates, newStates) {
   const events = [];
@@ -205,18 +220,19 @@ function generateAnomalyEvents(prevStates, newStates) {
   for (const id of Object.keys(newStates)) {
     const prev = prevStates[id];
     const curr = newStates[id];
-    if (!prev) continue;
+    if (!prev || !curr) continue;
 
-    // New breakdown
+    const vehicle = VEHICLES.find(v => v.id === id);
+
+    // Breakdown event
     if (prev.status !== VEHICLE_STATUS.BREAKDOWN && curr.status === VEHICLE_STATUS.BREAKDOWN) {
-      const vehicle = VEHICLES.find(v => v.id === id);
       events.push({
-        id: `alert-${Date.now()}-${id}`,
+        id: `alert-${Date.now()}-${id}-bd`,
         type: 'breakdown',
         vehicleId: id,
         registrationNo: vehicle?.registrationNo,
         routeId: curr.routeId,
-        message: `Bus ${vehicle?.registrationNo} stationary — suspected breakdown near waypoint ${curr.waypointIdx}`,
+        message: `Bus ${vehicle?.busNumber} (${vehicle?.registrationNo}) stationary (suspected breakdown)`,
         lat: curr.lat,
         lng: curr.lng,
         timestamp: now.toISOString(),
@@ -224,35 +240,15 @@ function generateAnomalyEvents(prevStates, newStates) {
       });
     }
 
-    // New signal loss
+    // Signal lost event
     if (!prev.isSignalLost && curr.isSignalLost) {
-      const vehicle = VEHICLES.find(v => v.id === id);
-      const route = ROUTES.find(r => r.id === curr.routeId);
-      const zone = route?.signalLossZones.find(z => curr.waypointIdx >= z.startIdx && curr.waypointIdx <= z.endIdx);
       events.push({
-        id: `alert-${Date.now()}-${id}-signal`,
+        id: `alert-${Date.now()}-${id}-sig`,
         type: 'signal-lost',
         vehicleId: id,
         registrationNo: vehicle?.registrationNo,
         routeId: curr.routeId,
-        message: `Bus ${vehicle?.registrationNo} signal lost${zone ? ` (${zone.label})` : ''}`,
-        lat: curr.lat,
-        lng: curr.lng,
-        timestamp: now.toISOString(),
-        status: 'new',
-      });
-    }
-
-    // New delay
-    if (prev.status !== VEHICLE_STATUS.DELAYED && curr.status === VEHICLE_STATUS.DELAYED) {
-      const vehicle = VEHICLES.find(v => v.id === id);
-      events.push({
-        id: `alert-${Date.now()}-${id}-delay`,
-        type: 'delay',
-        vehicleId: id,
-        registrationNo: vehicle?.registrationNo,
-        routeId: curr.routeId,
-        message: `Bus ${vehicle?.registrationNo} running ~${curr.delayMinutes} min behind schedule`,
+        message: `Signal lost for Bus ${vehicle?.busNumber} (${vehicle?.registrationNo}) in tunnel/valley zone`,
         lat: curr.lat,
         lng: curr.lng,
         timestamp: now.toISOString(),
@@ -264,26 +260,25 @@ function generateAnomalyEvents(prevStates, newStates) {
   return events;
 }
 
-/**
- * Create and return the simulation controller
- */
-export function createSimulation() {
-  let busStates = initBusStates();
-  let anomalyLog = [];
-  let listeners = [];
-  let tickTimer = null;
-  let isTouristSeason = false;
-  let tickCount = 0;
+/* ================================================================
+   PERSISTENT SINGLETON SIMULATION MANAGER
+   ================================================================ */
+let globalSimulationInstance = null;
 
-  // Pre-seed some historical anomalies for the admin dashboard
-  const seedAnomalies = [
+export function createSimulation() {
+  if (globalSimulationInstance) {
+    return globalSimulationInstance;
+  }
+
+  let busStates = initBusStates();
+  let anomalyLog = [
     {
       id: 'alert-seed-1',
       type: 'breakdown',
       vehicleId: 'bus-010',
       registrationNo: 'HP-26-A-5566',
       routeId: 'route-2',
-      message: 'Bus HP-26-A-5566 stationary for 18 min at km 145 (suspected breakdown)',
+      message: 'Bus Bus #205 (HP-26-A-5566) stationary for 18 min at km 145',
       lat: 31.4500, lng: 76.8400,
       timestamp: new Date(Date.now() - 3600000).toISOString(),
       status: 'resolved',
@@ -294,24 +289,16 @@ export function createSimulation() {
       vehicleId: 'bus-007',
       registrationNo: 'HP-01-G-6789',
       routeId: 'route-2',
-      message: 'Bus HP-01-G-6789 signal lost for 12 min (Pandoh tunnel zone)',
+      message: 'Bus Bus #202 (HP-01-G-6789) signal lost in Pandoh tunnel zone',
       lat: 31.7045, lng: 77.0510,
       timestamp: new Date(Date.now() - 7200000).toISOString(),
       status: 'resolved',
     },
-    {
-      id: 'alert-seed-3',
-      type: 'delay',
-      vehicleId: 'bus-003',
-      registrationNo: 'HP-01-C-9012',
-      routeId: 'route-1',
-      message: 'Bus HP-01-C-9012 running ~22 min behind schedule on Shimla Local',
-      lat: 31.0920, lng: 77.1895,
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
-      status: 'acknowledged',
-    },
   ];
-  anomalyLog = [...seedAnomalies];
+  let listeners = [];
+  let tickTimer = null;
+  let isTouristSeason = false;
+  let tickCount = 0;
 
   function tick() {
     tickCount++;
@@ -322,15 +309,13 @@ export function createSimulation() {
       newStates[id] = tickBus(busStates[id], isTouristSeason);
     }
 
-    // Generate anomaly events
     const newEvents = generateAnomalyEvents(prevStates, newStates);
     if (newEvents.length > 0) {
-      anomalyLog = [...newEvents, ...anomalyLog].slice(0, 100); // Keep last 100
+      anomalyLog = [...newEvents, ...anomalyLog].slice(0, 100);
     }
 
     busStates = newStates;
 
-    // Notify listeners
     listeners.forEach(fn => fn({
       busStates: { ...busStates },
       anomalyLog: [...anomalyLog],
@@ -338,24 +323,19 @@ export function createSimulation() {
     }));
   }
 
-  return {
+  globalSimulationInstance = {
     start() {
       if (tickTimer) return;
-      // Initial tick
       tick();
       tickTimer = setInterval(tick, TICK_INTERVAL_MS);
     },
 
     stop() {
-      if (tickTimer) {
-        clearInterval(tickTimer);
-        tickTimer = null;
-      }
+      // Keep running in singleton mode to preserve real time tracking
     },
 
     subscribe(fn) {
       listeners.push(fn);
-      // Immediately notify with current state
       fn({
         busStates: { ...busStates },
         anomalyLog: [...anomalyLog],
@@ -394,4 +374,7 @@ export function createSimulation() {
       );
     },
   };
+
+  globalSimulationInstance.start();
+  return globalSimulationInstance;
 }
