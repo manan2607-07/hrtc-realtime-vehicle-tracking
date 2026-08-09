@@ -18,7 +18,9 @@ export default function RouteDetail() {
   const routeVehicles = VEHICLES.filter(v => v.routeId === routeId);
 
   const activeBuses = useMemo(() =>
-    Object.values(busStates).filter(b => b.routeId === routeId),
+    Object.values(busStates)
+      .filter(b => b.routeId === routeId)
+      .sort((a, b) => a.vehicleId.localeCompare(b.vehicleId)),
     [busStates, routeId]
   );
 

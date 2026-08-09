@@ -112,43 +112,47 @@ export function computeETAs(busState, isTouristSeason = null) {
   const isStale = pingAge > 60000; // > 1 minute since last ping
   const isVeryStale = pingAge > 300000; // > 5 minutes
 
-  // Map each stop to its closest waypoint index
-  const stopWpIndices = stops.map(s => findStopWaypointIndex(s, waypoints));
+  const isForward = (busState.direction ?? 1) >= 0;
+
+  // Filter and sort stops in trip direction
+  const upcomingStops = stops
+    .map(s => ({ ...s, wpIdx: findStopWaypointIndex(s, waypoints) }))
+    .filter(s => isForward ? s.wpIdx > busWpIdx : s.wpIdx < busWpIdx)
+    .sort((a, b) => isForward ? a.wpIdx - b.wpIdx : b.wpIdx - a.wpIdx);
 
   const etas = [];
   let cumulativeMinutes = 0;
 
-  for (let i = 0; i < stops.length; i++) {
-    const stopWpIdx = stopWpIndices[i];
-
-    // Skip stops the bus has already passed
-    if (stopWpIdx <= busWpIdx) continue;
+  for (let i = 0; i < upcomingStops.length; i++) {
+    const stop = upcomingStops[i];
+    const stopWpIdx = stop.wpIdx;
 
     // Calculate distance from current position (or last upcoming stop) to this stop
-    const fromIdx = etas.length === 0 ? busWpIdx : stopWpIndices[i - 1];
+    const fromIdx = etas.length === 0 ? busWpIdx : upcomingStops[i - 1].wpIdx;
     const toIdx = stopWpIdx;
     const segmentDist = roadDistanceBetween(waypoints, fromIdx, toIdx);
 
     // Get average speed for segments between fromIdx and toIdx
+    const minWp = Math.min(fromIdx, toIdx);
+    const maxWp = Math.max(fromIdx, toIdx);
     let avgSpeed = 0;
     let segCount = 0;
-    for (let j = fromIdx; j < toIdx && j < speeds.length; j++) {
+    for (let j = minWp; j < maxWp && j < speeds.length; j++) {
       avgSpeed += speeds[j];
       segCount++;
     }
-    avgSpeed = segCount > 0 ? avgSpeed / segCount : 20; // fallback 20 km/h
+    avgSpeed = segCount > 0 ? avgSpeed / segCount : 20;
 
     // Apply time-of-day multiplier
     avgSpeed *= timeMultiplier;
 
     // Blend with current bus speed for the immediate next segment
     if (etas.length === 0 && busState.speed > 0) {
-      // For the segment the bus is currently on, weight current speed heavily
       avgSpeed = avgSpeed * 0.4 + busState.speed * 0.6;
     }
 
     // Prevent unreasonably low speeds
-    avgSpeed = Math.max(avgSpeed, 5);
+    avgSpeed = Math.max(avgSpeed, 8);
 
     const segmentTimeMin = (segmentDist / avgSpeed) * 60;
     cumulativeMinutes += segmentTimeMin;
@@ -157,20 +161,20 @@ export function computeETAs(busState, isTouristSeason = null) {
     let confidence = 'live';
     if (isVeryStale) confidence = 'low';
     else if (isStale) confidence = 'estimate';
-    else if (etas.length > 3) confidence = 'estimate'; // Further stops are naturally less certain
+    else if (etas.length > 3) confidence = 'estimate';
 
-    const haltMinutes = stops[i].haltMin ?? (
-      stops[i].name.includes('ISBT') || stops[i].name.includes('Stand') ? 5 : 2
+    const haltMinutes = stop.haltMin ?? (
+      stop.name.includes('ISBT') || stop.name.includes('Stand') ? 5 : 2
     );
 
     const arrivalDate = new Date(now + cumulativeMinutes * 60000);
     const departureDate = new Date(now + (cumulativeMinutes + haltMinutes) * 60000);
 
     etas.push({
-      stopId: stops[i].id,
-      stopName: stops[i].name,
-      stopCode: stops[i].code,
-      seqNo: stops[i].seqNo,
+      stopId: stop.id,
+      stopName: stop.name,
+      stopCode: stop.code,
+      seqNo: stop.seqNo,
       etaMinutes: Math.round(cumulativeMinutes),
       confidence,
       arrivalTime: arrivalDate.toISOString(),

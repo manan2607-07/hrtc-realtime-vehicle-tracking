@@ -243,6 +243,7 @@ export default function Home() {
       <div className="bus-list">
         {Object.values(busStates)
           .filter(bs => bs.status !== 'at-depot')
+          .sort((a, b) => a.vehicleId.localeCompare(b.vehicleId))
           .slice(0, 8)
           .map(bs => {
             const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);

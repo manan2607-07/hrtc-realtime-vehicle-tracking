@@ -110,14 +110,15 @@ function tickBus(busState, isTouristSeason) {
     return newState;
   }
 
-  // Determine speed for this segment
+  // Determine speed for this segment with smooth transitions
   const seasonKey = isTouristSeason ? 'touristSeason' : 'normal';
   const speeds = route.segmentSpeeds[seasonKey];
   const segIdx = Math.min(newState.waypointIdx, speeds.length - 1);
-  let baseSpeed = speeds[segIdx] || 20;
+  const targetSpeed = speeds[segIdx] || 20;
 
-  // Add random perturbation (±30%)
-  baseSpeed *= 0.7 + Math.random() * 0.6;
+  // Smooth speed transitions (EMA) with subtle realistic variation (±5%)
+  let baseSpeed = (busState.speed || targetSpeed) * 0.85 + targetSpeed * 0.15;
+  baseSpeed *= 0.95 + Math.random() * 0.1;
 
   // Simulate stop dwell time — slow down near stops
   const nearStop = route.stops.some(s => {
@@ -127,7 +128,7 @@ function tickBus(busState, isTouristSeason) {
     return d < 0.002; // ~200m
   });
   if (nearStop && Math.random() < 0.3) {
-    baseSpeed = 2 + Math.random() * 5; // Nearly stopped
+    baseSpeed = 2 + Math.random() * 3; // Nearly stopped at stop
     newState.stationaryTicks += 1;
   } else {
     newState.stationaryTicks = 0;
