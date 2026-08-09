@@ -7,7 +7,6 @@ import { VEHICLES } from '../../simulation/vehicles';
 import MapView from '../../components/MapView';
 import SustainabilityBadge from '../../components/SustainabilityBadge';
 import ETABadge from '../../components/ETABadge';
-import SeasonToggle from '../../components/SeasonToggle';
 
 export default function Home() {
 const { busStates } = useSimulation();
@@ -177,7 +176,6 @@ return (
             </div>
           )}
         </div>
-        <SeasonToggle />
       </div>
     </div>
 
