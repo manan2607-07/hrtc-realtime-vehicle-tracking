@@ -1432,34 +1432,68 @@ input, select, textarea {
   color: var(--color-primary) !important;
 }
 
-.bus-marker-icon {
+.bus-marker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bus-marker-container:hover {
+  transform: scale(1.2);
+  z-index: 1000 !important;
+}
+
+.bus-marker-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  font-size: 1.2rem;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
   border: 2px solid white;
-  transition: transform var(--transition-fast);
+  transition: all 0.2s;
 }
 
-.bus-marker-icon--running {
+.bus-marker-container--selected .bus-marker-badge {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+  box-shadow: 0 0 0 4px rgba(26, 82, 118, 0.3), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.bus-marker-icon--running .bus-marker-badge {
   background: var(--color-success);
 }
 
-.bus-marker-icon--delayed {
+.bus-marker-icon--delayed .bus-marker-badge {
   background: var(--color-warning);
 }
 
-.bus-marker-icon--breakdown {
+.bus-marker-icon--breakdown .bus-marker-badge {
   background: var(--color-danger);
   animation: pulse-breakdown 1.5s infinite;
 }
 
-.bus-marker-icon--signal-lost {
-  background: var(--color-text-muted);
+.bus-marker-icon--signal-lost .bus-marker-badge {
+  background: #7F8C8D;
+}
+
+.bus-marker-number {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-top: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+  letter-spacing: -0.2px;
 }
 
 @keyframes pulse-breakdown {
