@@ -8,6 +8,7 @@ import ToastContainer from './components/ToastContainer';
 
 // Login
 import RoleLogin from './pages/RoleLogin';
+import StaffLogin from './pages/StaffLogin';
 
 // Citizen pages
 import Home from './pages/citizen/Home';
@@ -241,8 +242,10 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public login */}
+              {/* Public passenger entry */}
               <Route path="/login" element={<RoleLogin />} />
+              {/* Staff-only login — not linked from passenger page */}
+              <Route path="/staff" element={<StaffLogin />} />
 
               {/* Customer routes — restricted to 'customer' role */}
               <Route element={<RequireRole allowedRoles={['customer']} />}>
