@@ -6,11 +6,12 @@ import { useLanguage } from '../context/LanguageContext';
  * On-time / Running / Live = Green (#1E8449 / var(--color-success))
  * Delayed / Estimate = Yellow (#D4A017 / var(--color-warning))
  */
-export default function ETABadge({ etaMinutes, confidence, busStatus, showLabel = true }) {
+export default function ETABadge({ etaMinutes, confidence, busStatus, status, showLabel = true }) {
   const { t } = useLanguage();
 
-  const isDelayed = busStatus === 'delayed' || confidence === 'estimate' || confidence === 'low';
-  const isArriving = etaMinutes < 1;
+  const effectiveStatus = busStatus || status;
+  const isDelayed = effectiveStatus === 'delayed' || confidence === 'estimate' || confidence === 'low';
+  const isArriving = typeof etaMinutes === 'number' && etaMinutes < 1;
 
   const textColor = isDelayed ? '#B7950B' : 'var(--color-success)';
   const bgColor = isDelayed ? 'var(--color-warning-bg)' : 'var(--color-success-bg)';

@@ -211,7 +211,7 @@ export default function Home() {
                       </span>
                     </div>
                     {busState?.status && (
-                      <ETABadge status={busState.status} delayMinutes={busState.delayMinutes || 0} />
+                      <ETABadge etaMinutes={busState?.etas?.[0]?.etaMinutes} confidence={busState?.etas?.[0]?.confidence} busStatus={busState.status} delayMinutes={busState.delayMinutes || 0} />
                     )}
                   </div>
                   
@@ -346,7 +346,7 @@ export default function Home() {
                     <div style={{ fontWeight: 600, color: 'var(--color-accent)' }}>~{nextEta.etaMinutes} min</div>
                   </div>
                 )}
-                <ETABadge status={bs.status} delayMinutes={bs.delayMinutes} />
+                <ETABadge etaMinutes={nextEta?.etaMinutes} confidence={nextEta?.confidence} busStatus={bs.status} delayMinutes={bs.delayMinutes} />
               </div>
             );
           })}

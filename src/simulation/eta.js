@@ -200,6 +200,7 @@ export function formatClockTime(isoString) {
  * Format ETA for display
  */
 export function formatETA(minutes) {
+  if (minutes === undefined || minutes === null || isNaN(minutes)) return 'On Time';
   if (minutes < 1) return 'Arriving';
   if (minutes < 60) return `${minutes} min`;
   const hrs = Math.floor(minutes / 60);
