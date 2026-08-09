@@ -18,7 +18,7 @@ const handleCustomer = () => {
 return (
   <div className="login-page">
     <div className="login-page__header">
-      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '80px', height: '80px', marginBottom: 'var(--space-3)', objectFit: 'contain' }} />
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" className="login-page__logo-img" />
       <h1 className="login-page__title">HRTC Real-Time Vehicle Tracking</h1>
       <p className="login-page__subtitle">Himachal Road Transport Corporation</p>
     </div>

@@ -1561,13 +1561,20 @@ input, select, textarea {
 }
 
 .login-page__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   margin-bottom: var(--space-8);
 }
 
-.login-page__emblem {
-  font-size: 3rem;
-  margin-bottom: var(--space-3);
+.login-page__logo-img {
+  width: 96px;
+  height: 96px;
+  margin-bottom: var(--space-4);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(178, 34, 52, 0.15));
 }
 
 .login-page__title {
@@ -1575,6 +1582,7 @@ input, select, textarea {
   font-weight: 800;
   letter-spacing: -0.5px;
   color: var(--color-primary);
+  margin: 0;
 }
 
 .login-page__subtitle {
