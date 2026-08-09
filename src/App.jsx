@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink, Link, Navigate, Outlet } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SimulationProvider } from './context/SimulationContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -249,7 +249,18 @@ return (
  APP ROOT
  ================================================================ */
 export default function App() {
-return (
+  useEffect(() => {
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.type = 'image/svg+xml';
+    link.href = '/hrtc-logo.svg';
+  }, []);
+
+  return (
   <LanguageProvider>
     <SimulationProvider>
       <AuthProvider>
