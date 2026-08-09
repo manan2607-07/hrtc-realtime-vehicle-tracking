@@ -67,7 +67,7 @@ const occupancyColor = occupancyPercent > 90 ? 'var(--color-danger)' : occupancy
 return (
   <div>
     {/* Conductor identity banner */}
-    <div className="card mb-4" style={{ background: 'linear-gradient(135deg, #148F77, #1ABC9C)', color: 'white' }}>
+    <div className="card mb-4">
       <div className="card__body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
           <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>On Duty — {vehicle.busNumber}</div>

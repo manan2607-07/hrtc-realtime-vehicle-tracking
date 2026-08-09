@@ -48,7 +48,7 @@ const routeForMap = route ? [{ id: route.id, waypoints: route.waypoints, color: 
 return (
   <div>
     {/* Driver identity banner */}
-    <div className="card mb-4" style={{ background: 'linear-gradient(135deg, #1A5276, #2E86C1)', color: 'white' }}>
+    <div className="card mb-4">
       <div className="card__body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
           <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>On Duty — {vehicle.busNumber}</div>

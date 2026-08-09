@@ -180,7 +180,7 @@ const { logout, session } = useAuth();
 
 return (
   <div className="app-layout">
-    <header className="app-header" style={{ background: 'linear-gradient(135deg, #1A5276, #2E86C1)' }}>
+    <header className="app-header">
       <Link to="/driver" className="app-header__logo">
         <div className="app-header__emblem"></div>
         <div>
@@ -210,7 +210,7 @@ const { logout, session } = useAuth();
 
 return (
   <div className="app-layout">
-    <header className="app-header" style={{ background: 'linear-gradient(135deg, #148F77, #1ABC9C)' }}>
+    <header className="app-header">
       <Link to="/conductor" className="app-header__logo">
         <div className="app-header__emblem"></div>
         <div>
