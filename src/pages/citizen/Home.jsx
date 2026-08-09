@@ -14,8 +14,8 @@ export default function Home() {
   const navigate = useNavigate();
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const [fromLocation, setFromLocation] = useState('Shimla ISBT (Tutikandi)');
-  const [toLocation, setToLocation] = useState('Kufri');
+  const [fromLocation, setFromLocation] = useState('');
+  const [toLocation, setToLocation] = useState('');
   const [journeyDate, setJourneyDate] = useState(todayStr);
   const [hasSearched, setHasSearched] = useState(false);
 

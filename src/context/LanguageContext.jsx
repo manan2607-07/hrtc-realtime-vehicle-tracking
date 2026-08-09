@@ -11,11 +11,7 @@ export function LanguageProvider({ children }) {
   }, [lang]);
 
   const toggleLanguage = useCallback(() => {
-    setLang(prev => {
-      if (prev === 'en') return 'hi';
-      if (prev === 'hi') return 'hinglish';
-      return 'en';
-    });
+    setLang(prev => prev === 'en' ? 'hi' : 'en');
   }, []);
 
   return (
