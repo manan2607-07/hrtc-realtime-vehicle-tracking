@@ -9,166 +9,241 @@ import SustainabilityBadge from '../../components/SustainabilityBadge';
 import ETABadge from '../../components/ETABadge';
 
 export default function Home() {
-const { busStates } = useSimulation();
-const { t } = useLanguage();
-const navigate = useNavigate();
-const [searchQuery, setSearchQuery] = useState('');
-const [showResults, setShowResults] = useState(false);
+  const { busStates } = useSimulation();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
 
-// Search logic
-const searchResults = useMemo(() => {
-  if (!searchQuery.trim()) return [];
-  const q = searchQuery.toLowerCase().trim();
-  const cleanDigits = searchQuery.replace(/\D/g, '');
-  const results = [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [fromLocation, setFromLocation] = useState('Shimla ISBT (Tutikandi)');
+  const [toLocation, setToLocation] = useState('Kufri');
+  const [journeyDate, setJourneyDate] = useState(todayStr);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // Search buses by Bus Number, Registration, Driver Name, or Driver Phone
-  VEHICLES.forEach(vehicle => {
-    const busNumMatch = vehicle.busNumber.toLowerCase().includes(q) || (cleanDigits && vehicle.busNumber.includes(cleanDigits));
-    const regMatch = vehicle.registrationNo.toLowerCase().includes(q);
-    const driverNameMatch = vehicle.driver?.name?.toLowerCase().includes(q);
-    const cleanPhone = vehicle.driver?.phone ? vehicle.driver.phone.replace(/\D/g, '') : '';
-    const driverPhoneMatch = cleanDigits && cleanDigits.length >= 3 && cleanPhone.includes(cleanDigits);
-
-    if (busNumMatch || regMatch || driverNameMatch || driverPhoneMatch) {
-      const route = ROUTES.find(r => r.id === vehicle.routeId);
-      results.push({
-        type: 'bus',
-        data: {
-          ...vehicle,
-          routeNo: route?.routeNo,
-          routeName: route?.name,
-          matchedBy: driverPhoneMatch ? `Driver Phone: ${vehicle.driver?.phone}`
-                   : driverNameMatch ? `Driver: ${vehicle.driver?.name}`
-                   : busNumMatch ? `Bus Number: ${vehicle.busNumber}`
-                   : `Reg: ${vehicle.registrationNo}`,
-        }
-      });
-    }
-  });
-
-  // Search routes
-  ROUTES.forEach(route => {
-    if (
-      route.name.toLowerCase().includes(q) ||
-      route.routeNo.includes(q) ||
-      route.origin.toLowerCase().includes(q) ||
-      route.destination.toLowerCase().includes(q)
-    ) {
-      results.push({ type: 'route', data: route });
-    }
-  });
-
-  // Search stops
-  ROUTES.forEach(route => {
-    route.stops.forEach(stop => {
-      if (
-        stop.name.toLowerCase().includes(q) ||
-        stop.code.toLowerCase().includes(q)
-      ) {
-        if (!results.find(r => r.type === 'stop' && r.data.id === stop.id)) {
-          results.push({ type: 'stop', data: { ...stop, routeId: route.id, routeNo: route.routeNo } });
-        }
-      }
+  // Origin & Destination Options
+  const locationOptions = useMemo(() => {
+    const set = new Set();
+    ROUTES.forEach(r => {
+      set.add(r.origin);
+      set.add(r.destination);
+      r.stops.forEach(s => set.add(s.name));
     });
-  });
+    return Array.from(set).sort();
+  }, []);
 
-  return results.slice(0, 8);
-}, [searchQuery]);
+  // Swap From & To
+  const handleSwap = () => {
+    const temp = fromLocation;
+    setFromLocation(toLocation);
+    setToLocation(temp);
+  };
 
-// Active buses count per route
-const activeBusesByRoute = useMemo(() => {
-  const counts = {};
-  ROUTES.forEach(r => {
-    counts[r.id] = Object.values(busStates).filter(b => b.routeId === r.id && b.status !== 'at-depot').length;
-  });
-  return counts;
-}, [busStates]);
+  // Search Submit
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setHasSearched(true);
+  };
 
-// Map data: all buses
-const allBusesForMap = useMemo(() =>
-  Object.values(busStates).map(bs => {
-    const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
-    const route = ROUTES.find(r => r.id === bs.routeId);
-    return {
-      id: bs.vehicleId,
-      lat: bs.lat,
-      lng: bs.lng,
-      heading: bs.heading,
-      speed: bs.speed,
-      status: bs.status,
-      registrationNo: vehicle?.registrationNo,
-      routeColor: route?.color,
-    };
-  }), [busStates]);
+  // Filter available buses based on journey selection
+  const availableBuses = useMemo(() => {
+    if (!hasSearched) return [];
 
-const allRoutesForMap = ROUTES.map(r => ({
-  id: r.id,
-  waypoints: r.waypoints,
-  color: r.color,
-}));
+    return VEHICLES.filter(vehicle => {
+      const route = ROUTES.find(r => r.id === vehicle.routeId);
+      if (!route) return false;
 
-const handleResultClick = (result) => {
-  if (result.type === 'bus') {
-    navigate(`/track/${result.data.id}`);
-  } else if (result.type === 'route') {
-    navigate(`/route/${result.data.id}`);
-  } else if (result.type === 'stop') {
-    navigate(`/stop/${result.data.id}`);
-  }
-  setShowResults(false);
-  setSearchQuery('');
-};
+      const fromQ = (fromLocation || '').toLowerCase().trim();
+      const toQ = (toLocation || '').toLowerCase().trim();
 
-return (
-  <div>
-    {/* Hero search */}
-    <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)', paddingTop: 'var(--space-4)' }}>
-      <h1 className="page-title" style={{ fontSize: 'var(--font-size-2xl)', marginBottom: 'var(--space-2)' }}>
-        {t('tagline')}
-      </h1>
-      <p className="text-muted mb-6" style={{ maxWidth: '500px', margin: '0 auto var(--space-6)' }}>
-        {t('appSubtitle')}
-      </p>
+      const matchFrom = !fromQ || route.origin.toLowerCase().includes(fromQ) || route.stops.some(s => s.name.toLowerCase().includes(fromQ));
+      const matchTo = !toQ || route.destination.toLowerCase().includes(toQ) || route.stops.some(s => s.name.toLowerCase().includes(toQ));
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-4)', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
-        <div className="search-bar" style={{ margin: 0 }}>
-          <span className="search-bar__icon"></span>
-          <input
-            className="search-bar__input"
-            type="text"
-            placeholder="Search by Bus # (e.g. 101), Driver Phone, Driver Name, Route..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
-            onFocus={() => setShowResults(true)}
-            onBlur={() => setTimeout(() => setShowResults(false), 200)}
-            id="home-search-input"
-          />
-          {showResults && searchResults.length > 0 && (
-            <div className="search-bar__results">
-              {searchResults.map((result, i) => (
-                <div
-                  key={`${result.type}-${result.data.id}-${i}`}
-                  className="search-bar__result-item"
-                  onClick={() => handleResultClick(result)}
+      return matchFrom && matchTo;
+    }).map(vehicle => {
+      const route = ROUTES.find(r => r.id === vehicle.routeId);
+      const busState = busStates[vehicle.id];
+      return { vehicle, route, busState };
+    });
+  }, [fromLocation, toLocation, journeyDate, hasSearched, busStates]);
+
+  // Active buses count per route
+  const activeBusesByRoute = useMemo(() => {
+    const counts = {};
+    ROUTES.forEach(r => {
+      counts[r.id] = Object.values(busStates).filter(b => b.routeId === r.id && b.status !== 'at-depot').length;
+    });
+    return counts;
+  }, [busStates]);
+
+  // Map data: all buses
+  const allBusesForMap = useMemo(() =>
+    Object.values(busStates).map(bs => {
+      const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
+      const route = ROUTES.find(r => r.id === bs.routeId);
+      return {
+        id: bs.vehicleId,
+        lat: bs.lat,
+        lng: bs.lng,
+        heading: bs.heading,
+        speed: bs.speed,
+        status: bs.status,
+        registrationNo: vehicle?.registrationNo,
+        routeColor: route?.color,
+      };
+    }), [busStates]);
+
+  const allRoutesForMap = ROUTES.map(r => ({
+    id: r.id,
+    waypoints: r.waypoints,
+    color: r.color,
+  }));
+
+  return (
+    <div>
+      {/* Hero title */}
+      <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)', paddingTop: 'var(--space-4)' }}>
+        <h1 className="page-title" style={{ fontSize: 'var(--font-size-2xl)', marginBottom: 'var(--space-2)' }}>
+          {t('tagline')}
+        </h1>
+        <p className="text-muted" style={{ maxWidth: '540px', margin: '0 auto var(--space-6)' }}>
+          Select your departure, arrival, and journey date to check HRTC bus availability and live tracking.
+        </p>
+
+        {/* Journey Search Widget */}
+        <div className="journey-search-box">
+          <form onSubmit={handleSearchSubmit}>
+            <div className="journey-search-grid">
+              
+              {/* FROM Location */}
+              <div className="journey-field">
+                <label htmlFor="from-location">From (Origin)</label>
+                <select
+                  id="from-location"
+                  value={fromLocation}
+                  onChange={(e) => setFromLocation(e.target.value)}
                 >
-                  <span>{result.type === 'bus' ? '' : result.type === 'route' ? '' : ''}</span>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>
-                      {result.type === 'bus'
-                        ? `${result.data.busNumber} (${result.data.registrationNo})`
-                        : result.type === 'route'
-                        ? `Route ${result.data.routeNo}: ${result.data.name}`
-                        : result.data.name
-                      }
+                  <option value="">-- Select Origin Station --</option>
+                  {locationOptions.map(loc => (
+                    <option key={`from-${loc}`} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Swap Button */}
+              <button
+                type="button"
+                className="journey-swap-btn"
+                onClick={handleSwap}
+                title="Swap Origin and Destination"
+                aria-label="Swap"
+              >
+                ⇄
+              </button>
+
+              {/* TO Location */}
+              <div className="journey-field">
+                <label htmlFor="to-location">To (Destination)</label>
+                <select
+                  id="to-location"
+                  value={toLocation}
+                  onChange={(e) => setToLocation(e.target.value)}
+                >
+                  <option value="">-- Select Destination --</option>
+                  {locationOptions.map(loc => (
+                    <option key={`to-${loc}`} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* CALENDAR DATE PICKER */}
+              <div className="journey-field">
+                <label htmlFor="journey-date">Date of Journey</label>
+                <input
+                  type="date"
+                  id="journey-date"
+                  value={journeyDate}
+                  min={todayStr}
+                  onChange={(e) => setJourneyDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* SEARCH BUTTON */}
+              <button type="submit" className="journey-search-btn">
+                Search Buses
+              </button>
+
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* SEARCH RESULTS SECTION */}
+      {hasSearched && (
+        <div className="mb-8">
+          <div className="flex flex--between flex--align-center mb-4">
+            <h2 className="section-title" style={{ margin: 0 }}>
+              Available HRTC Buses ({availableBuses.length})
+            </h2>
+            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+              Journey Date: <strong>{new Date(journeyDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+            </span>
+          </div>
+
+          {availableBuses.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-2)' }}>🚌</div>
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>No Direct HRTC Buses Found</h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
+                No active buses found running directly between <strong>{fromLocation || 'selected origin'}</strong> and <strong>{toLocation || 'selected destination'}</strong> on {journeyDate}. Try selecting another route station or date.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid--2 gap-4">
+              {availableBuses.map(({ vehicle, route, busState }) => (
+                <div key={vehicle.id} className="card" style={{ borderLeft: `4px solid ${route?.color || 'var(--color-primary)'}` }}>
+                  <div className="card__header flex flex--between flex--align-center">
+                    <div>
+                      <span style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', color: 'var(--color-primary)' }}>
+                        {vehicle.busNumber}
+                      </span>
+                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginLeft: '8px' }}>
+                        ({vehicle.registrationNo})
+                      </span>
                     </div>
-                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-                      {result.type === 'bus'
-                        ? `${result.data.matchedBy} · Rte ${result.data.routeNo}`
-                        : result.type === 'route'
-                        ? `${result.data.origin} → ${result.data.destination}`
-                        : `Stop Code: ${result.data.code} · Route ${result.data.routeNo}`
-                      }
+                    {busState?.status && (
+                      <ETABadge status={busState.status} delayMinutes={busState.delayMinutes || 0} />
+                    )}
+                  </div>
+                  
+                  <div className="card__body">
+                    <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-1)' }}>
+                      Route {route?.routeNo}: {route?.name}
+                    </div>
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
+                      {route?.origin} → {route?.destination} · {route?.distanceKm} km (~{route?.typicalDurationMin} min)
+                    </div>
+
+                    <div className="flex flex--between flex--align-center p-3" style={{ background: 'var(--color-background-alt)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)' }}>
+                      <div>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Assigned Driver</div>
+                        <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>{vehicle.driver?.name}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Driver Phone</div>
+                        <div style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-primary)' }}>
+                          {vehicle.driver?.phone}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex--between flex--align-center">
+                      <SustainabilityBadge fuelType={vehicle.fuelType} emissionStandard={vehicle.emissionStandard} />
+                      <button
+                        className="btn btn--primary btn--sm"
+                        onClick={() => navigate(`/track/${vehicle.id}`)}
+                      >
+                        Track Live Bus →
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -176,126 +251,106 @@ return (
             </div>
           )}
         </div>
+      )}
+
+      {/* Overview map */}
+      <div className="card mb-6">
+        <MapView
+          center={[31.5, 77.0]}
+          zoom={8}
+          buses={allBusesForMap}
+          routes={allRoutesForMap}
+          className="map-container"
+          onBusClick={(bus) => navigate(`/track/${bus.id}`)}
+        />
       </div>
-    </div>
 
-    {/* Overview map */}
-    <div className="card mb-6">
-      <MapView
-        center={[31.5, 77.0]}
-        zoom={8}
-        buses={allBusesForMap}
-        routes={allRoutesForMap}
-        className="map-container"
-        onBusClick={(bus) => navigate(`/track/${bus.id}`)}
-      />
-    </div>
-
-    {/* Routes grid */}
-    <h2 className="section-title">{t('allRoutes')}</h2>
-    <div className="grid grid--3 mb-6">
-      {ROUTES.map(route => (
-        <div
-          key={route.id}
-          className="card card--clickable"
-          onClick={() => navigate(`/route/${route.id}`)}
-          id={`route-card-${route.id}`}
-        >
-          <div className="card__header" style={{ background: route.color, color: 'white' }}>
-            <span style={{ fontWeight: 700 }}>Route {route.routeNo}</span>
-            <span className="badge badge--running" style={{ background: 'rgba(255,255,255,0.25)', color: 'white' }}>
-              {activeBusesByRoute[route.id] || 0} {t('activeBuses')}
-            </span>
-          </div>
-          <div className="card__body">
-            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
-              {route.name}
-            </h3>
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
-              {route.origin} → {route.destination}
-            </p>
-            <div className="flex flex--gap-3" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-              <span> {route.distanceKm} {t('km')}</span>
-              <span> ~{route.typicalDurationMin} {t('min')}</span>
-              <span> {route.stops.length} {t('stops')}</span>
+      {/* Routes grid */}
+      <h2 className="section-title">{t('allRoutes')}</h2>
+      <div className="grid grid--3 mb-6">
+        {ROUTES.map(route => (
+          <div
+            key={route.id}
+            className="card card--clickable"
+            onClick={() => navigate(`/route/${route.id}`)}
+            id={`route-card-${route.id}`}
+          >
+            <div className="card__header" style={{ background: route.color, color: 'white' }}>
+              <span style={{ fontWeight: 700 }}>Route {route.routeNo}</span>
+              <span className="badge badge--running" style={{ background: 'rgba(255,255,255,0.25)', color: 'white' }}>
+                {activeBusesByRoute[route.id] || 0} {t('activeBuses')}
+              </span>
             </div>
-          </div>
-          <div className="card__footer">
-            <div className="flex flex--gap-2 flex--wrap">
-              {VEHICLES.filter(v => v.routeId === route.id).slice(0, 3).map(v => (
-                <SustainabilityBadge key={v.id} fuelType={v.fuelType} emissionStandard={v.emissionStandard} />
-              ))}
-              {VEHICLES.filter(v => v.routeId === route.id).length > 3 && (
-                <span className="badge" style={{ background: 'var(--color-background)', color: 'var(--color-text-muted)' }}>
-                  +{VEHICLES.filter(v => v.routeId === route.id).length - 3} more
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Active buses list */}
-    <h2 className="section-title">{t('activeBuses')}</h2>
-    <div className="bus-list">
-      {Object.values(busStates)
-        .filter(bs => bs.status !== 'at-depot')
-        .sort((a, b) => a.vehicleId.localeCompare(b.vehicleId))
-        .slice(0, 8)
-        .map(bs => {
-          const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
-          const route = ROUTES.find(r => r.id === bs.routeId);
-          const nextEta = bs.etas?.[0];
-          return (
-            <div
-              key={bs.vehicleId}
-              className="bus-item"
-              onClick={() => navigate(`/track/${bs.vehicleId}`)}
-              id={`bus-item-${bs.vehicleId}`}
-            >
-              <div className="bus-item__route-badge" style={{ background: route?.color || '#888' }}>
-                {route?.routeNo || '?'}
+            <div className="card__body">
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
+                {route.name}
+              </h3>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
+                {route.origin} → {route.destination}
+              </p>
+              <div className="flex flex--gap-3" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                <span>{route.distanceKm} {t('km')}</span>
+                <span>~{route.typicalDurationMin} {t('min')}</span>
+                <span>{route.stops.length} {t('stops')}</span>
               </div>
-              <div className="bus-item__info">
-                <div className="bus-item__reg" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{vehicle?.busNumber}</span>
-                  <span>({vehicle?.registrationNo})</span>
-                  {vehicle?.driver?.name && (
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 400 }}>
-                      Driver: {vehicle.driver.name} ({vehicle.driver.phone})
-                    </span>
-                  )}
-                </div>
-                <div className="bus-item__route-name">
-                  {route?.name} · {route?.origin} → {route?.destination}
-                </div>
-                <div className="bus-item__badges">
-                  <SustainabilityBadge fuelType={vehicle?.fuelType} emissionStandard={vehicle?.emissionStandard} />
-                  <span className={`badge badge--${bs.status}`}>
-                    {bs.status === 'running' ? '● ' + t('running') :
-                     bs.status === 'delayed' ? '◐ ' + t('delayed') :
-                     bs.status === 'breakdown' ? '⊘ ' + t('breakdown') :
-                     '◌ ' + t('signalLost')}
+            </div>
+            <div className="card__footer">
+              <div className="flex flex--gap-2 flex--wrap">
+                {VEHICLES.filter(v => v.routeId === route.id).slice(0, 3).map(v => (
+                  <SustainabilityBadge key={v.id} fuelType={v.fuelType} emissionStandard={v.emissionStandard} />
+                ))}
+                {VEHICLES.filter(v => v.routeId === route.id).length > 3 && (
+                  <span className="badge" style={{ background: 'var(--color-background)', color: 'var(--color-text-muted)' }}>
+                    +{VEHICLES.filter(v => v.routeId === route.id).length - 3} more
                   </span>
-                </div>
-              </div>
-              <div className="bus-item__eta">
-                {nextEta ? (
-                  <>
-                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
-                      {t('nextStop')}: {nextEta.stopName}
-                    </div>
-                    <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} busStatus={bs.status} showLabel={false} />
-                  </>
-                ) : (
-                  <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>—</span>
                 )}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
+      </div>
+
+      {/* Active buses list */}
+      <h2 className="section-title">{t('activeBuses')}</h2>
+      <div className="bus-list">
+        {Object.values(busStates)
+          .filter(bs => bs.status !== 'at-depot')
+          .sort((a, b) => a.vehicleId.localeCompare(b.vehicleId))
+          .slice(0, 8)
+          .map(bs => {
+            const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
+            const route = ROUTES.find(r => r.id === bs.routeId);
+            const nextEta = bs.etas?.[0];
+            return (
+              <div
+                key={bs.vehicleId}
+                className="bus-item"
+                onClick={() => navigate(`/track/${bs.vehicleId}`)}
+                id={`bus-item-${bs.vehicleId}`}
+              >
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: route?.color || 'var(--color-primary)' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>
+                    {vehicle?.busNumber} ({vehicle?.registrationNo})
+                  </div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                    Route {route?.routeNo}: {route?.name}
+                  </div>
+                </div>
+                {vehicle && (
+                  <SustainabilityBadge fuelType={vehicle.fuelType} emissionStandard={vehicle.emissionStandard} />
+                )}
+                {nextEta && (
+                  <div style={{ textAlign: 'right', fontSize: 'var(--font-size-xs)' }}>
+                    <div style={{ color: 'var(--color-text-muted)' }}>Next: {nextEta.stopName}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--color-accent)' }}>~{nextEta.etaMinutes} min</div>
+                  </div>
+                )}
+                <ETABadge status={bs.status} delayMinutes={bs.delayMinutes} />
+              </div>
+            );
+          })}
+      </div>
     </div>
-  </div>
-);
+  );
 }
