@@ -1411,6 +1411,27 @@ input, select, textarea {
   line-height: var(--line-height) !important;
 }
 
+.leaflet-control-zoom {
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+  margin-right: 14px !important;
+  margin-bottom: 14px !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-bottom: 1px solid var(--color-border-light) !important;
+  transition: background-color 0.2s;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--color-background-alt) !important;
+  color: var(--color-primary) !important;
+}
+
 .bus-marker-icon {
   display: flex;
   align-items: center;

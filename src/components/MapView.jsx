@@ -35,13 +35,16 @@ useEffect(() => {
 
   const map = L.map(mapRef.current, {
     preferCanvas: true,
-    zoomControl: true,
+    zoomControl: false,
     attributionControl: true,
     maxBounds: INDIA_BOUNDS,
     maxBoundsViscosity: 1.0,
     minZoom: 5,
     maxZoom: 18,
   }).setView(center, Math.max(zoom, 5));
+
+  // Add zoom control at bottomright to prevent overlapping place names or stop titles
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: 'Official India Boundaries (Survey of India) · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
