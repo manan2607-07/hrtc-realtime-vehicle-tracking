@@ -166,7 +166,7 @@ return (
                     {nextEta && (
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>{nextEta.stopName}</div>
-                        <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} showLabel={false} />
+                        <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} busStatus={busState?.status} showLabel={false} />
                       </div>
                     )}
                   </div>

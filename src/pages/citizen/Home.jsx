@@ -288,7 +288,7 @@ return (
                     <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                       {t('nextStop')}: {nextEta.stopName}
                     </div>
-                    <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} showLabel={false} />
+                    <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} busStatus={bs.status} showLabel={false} />
                   </>
                 ) : (
                   <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>—</span>

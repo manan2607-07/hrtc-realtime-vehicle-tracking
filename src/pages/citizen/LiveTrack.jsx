@@ -128,10 +128,14 @@ return (
           <div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('nextStop')}</div>
             <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: '4px' }}>{nextEta.stopName}</div>
-            <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: nextEta.etaMinutes < 2 ? 'var(--color-success)' : 'var(--color-text)' }}>
+            <div style={{
+              fontSize: 'var(--font-size-2xl)',
+              fontWeight: 800,
+              color: busState.status === 'delayed' ? '#D4A017' : 'var(--color-success)'
+            }}>
               {formatETA(nextEta.etaMinutes)}
             </div>
-            <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} />
+            <ETABadge etaMinutes={nextEta.etaMinutes} confidence={nextEta.confidence} busStatus={busState.status} />
           </div>
         )}
         <div className="flex flex--gap-2 mt-4" style={{ justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>

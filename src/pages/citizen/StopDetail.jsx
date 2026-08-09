@@ -137,7 +137,7 @@ return (
               </div>
             </div>
             <div className="bus-item__eta">
-              <ETABadge etaMinutes={bus.eta.etaMinutes} confidence={bus.eta.confidence} />
+              <ETABadge etaMinutes={bus.eta.etaMinutes} confidence={bus.eta.confidence} busStatus={bus.status} />
             </div>
           </div>
         ))}
