@@ -147,24 +147,31 @@ export default function LiveTrack() {
         </div>
       </div>
 
-      {/* Driver Information & Commercial Telemetry Cards */}
+      {/* Driver & HRTC Crew Telemetry Cards */}
       <div className="grid grid--4 mb-4">
         <div className="stat-card" style={{ gridColumn: 'span 2' }}>
           <div className="stat-card__label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>👤 Driver & AIS-140 GPS Unit</span>
+            <span>👤 Driver & Crew Telemetry</span>
             <span className={`badge ${isBroadcastingGps ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
-              {isBroadcastingGps ? '● Phone GPS Broadcast Active' : '● AIS-140 Hardware GPS'}
+              {isBroadcastingGps ? '● Phone GPS Stream Active' : '● AIS-140 Hardware Telemetry'}
             </span>
           </div>
           <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
+              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>
+                {vehicle.driver?.name} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400, color: 'var(--color-primary)' }}>({vehicle.driver?.badge})</span>
+              </div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                Emp ID: <strong>{vehicle.driver?.empId}</strong> · Exp: <strong>{vehicle.driver?.experienceYears} yrs</strong>
+                Driver License: <strong>{vehicle.driver?.licenseNo}</strong> · Emp ID: <strong>{vehicle.driver?.empId}</strong> ({vehicle.driver?.experienceYears} yrs exp)
               </div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                Driver Telemetry: 📞 <strong>{vehicle.driver?.phone}</strong>
+                Driver Phone: 📞 <strong>{vehicle.driver?.phone}</strong>
               </div>
+              {vehicle.driver?.conductor && (
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                  Conductor: 🎫 <strong>{vehicle.driver.conductor.name}</strong> ({vehicle.driver.conductor.empId}) · 📞 {vehicle.driver.conductor.phone}
+                </div>
+              )}
             </div>
             <div className="flex flex--gap-2">
               <button
@@ -182,10 +189,10 @@ export default function LiveTrack() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-card__label">Speed & Telemetry</div>
+          <div className="stat-card__label">Speed & Service Class</div>
           <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-            14 Satellites · AIS-140 Unit
+            {vehicle.serviceClass || 'HRTC Express Service'}
           </div>
         </div>
         <div className="stat-card">
@@ -194,7 +201,7 @@ export default function LiveTrack() {
             {pingAge != null ? (pingAge < 60 ? `${pingAge}${t('secondsAgo')}` : `${Math.round(pingAge / 60)}${t('minutesAgo')}`) : '—'}
           </div>
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-            Ping Latency: ~120ms (4G M2M)
+            Unit: {vehicle.ais140DeviceId || 'AIS-140 GPS'}
           </div>
         </div>
       </div>

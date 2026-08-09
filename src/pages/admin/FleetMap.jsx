@@ -129,16 +129,25 @@ export default function FleetMap() {
                 <div style={{ fontWeight: 600 }}>Route {selectedRoute.routeNo}: {selectedRoute.name}</div>
               </div>
               <div style={{ marginBottom: 'var(--space-3)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Driver Information</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Driver & Crew Credentials</div>
                 <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>👤 {selectedVehicle.driver?.name}</div>
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                  ID: {selectedVehicle.driver?.empId} · 📞 {selectedVehicle.driver?.phone}
+                  License: {selectedVehicle.driver?.licenseNo}
                 </div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  Emp ID: {selectedVehicle.driver?.empId} · 📞 {selectedVehicle.driver?.phone}
+                </div>
+                {selectedVehicle.driver?.conductor && (
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                    Conductor: 🎫 {selectedVehicle.driver.conductor.name} (📞 {selectedVehicle.driver.conductor.phone})
+                  </div>
+                )}
               </div>
               <div style={{ marginBottom: 'var(--space-3)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Vehicle Model</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Vehicle & AIS-140 GPS Unit</div>
                 <div style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)' }}>{selectedVehicle.model}</div>
-                {selectedVehicle.brandName && <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-accent)' }}>{selectedVehicle.brandName}</div>}
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-primary)', fontWeight: 600 }}>{selectedVehicle.serviceClass}</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>AIS-140 ID: {selectedVehicle.ais140DeviceId}</div>
               </div>
               <div style={{ marginBottom: 'var(--space-3)' }}>
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Sustainability</div>
