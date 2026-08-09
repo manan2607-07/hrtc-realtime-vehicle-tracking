@@ -1,9 +1,13 @@
-import { BrowserRouter, Routes, Route, NavLink, Link, useLocation, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Link, Navigate, Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import { SimulationProvider } from './context/SimulationContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import LanguageToggle from './components/LanguageToggle';
 import ToastContainer from './components/ToastContainer';
+
+// Login
+import RoleLogin from './pages/RoleLogin';
 
 // Citizen pages
 import Home from './pages/citizen/Home';
@@ -19,11 +23,26 @@ import RouteManager from './pages/admin/RouteManager';
 import Reports from './pages/admin/Reports';
 import Alerts from './pages/admin/Alerts';
 
+// Driver & Conductor pages
+import DriverDashboard from './pages/driver/DriverDashboard';
+import ConductorDashboard from './pages/conductor/ConductorDashboard';
+
+/* ================================================================
+   ROUTE GUARD — redirects to /login if role doesn't match
+   ================================================================ */
+function RequireRole({ allowedRoles, children }) {
+  const { session } = useAuth();
+  if (!session) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
+  return children || <Outlet />;
+}
+
 /* ================================================================
    CITIZEN LAYOUT
    ================================================================ */
 function CitizenLayout() {
   const { t } = useLanguage();
+  const { logout, role } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -44,22 +63,20 @@ function CitizenLayout() {
           <NavLink to="/sms" className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
             {t('navSMS')}
           </NavLink>
-          <NavLink to="/admin" className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
-            {t('navAdmin')}
-          </NavLink>
+          <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+            🔓 Switch Role
+          </button>
         </nav>
 
         <div className="app-header__actions">
           <LanguageToggle />
         </div>
 
-        {/* Mobile hamburger */}
         <button className="mobile-nav-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} aria-label="Menu">
           {mobileNavOpen ? '✕' : '☰'}
         </button>
       </header>
 
-      {/* Mobile nav overlay */}
       {mobileNavOpen && (
         <>
           <div className="mobile-nav-overlay" onClick={() => setMobileNavOpen(false)} />
@@ -70,9 +87,9 @@ function CitizenLayout() {
             <NavLink to="/sms" className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
               💬 {t('navSMS')}
             </NavLink>
-            <NavLink to="/admin" className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
-              ⚙️ {t('navAdmin')}
-            </NavLink>
+            <button className="app-header__nav-link" onClick={() => { setMobileNavOpen(false); logout(); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit', textAlign: 'left', width: '100%' }}>
+              🔓 Switch Role
+            </button>
             <div style={{ marginTop: 'auto', padding: 'var(--space-3)' }}>
               <LanguageToggle />
             </div>
@@ -94,6 +111,7 @@ function CitizenLayout() {
    ================================================================ */
 function AdminLayout() {
   const { t } = useLanguage();
+  const { logout, session } = useAuth();
 
   return (
     <div className="admin-layout">
@@ -102,14 +120,14 @@ function AdminLayout() {
           <div className="app-header__emblem" style={{ background: 'rgba(255,255,255,0.2)' }}>⚙️</div>
           <div>
             <div className="app-header__title">HRTC {t('navAdmin')}</div>
-            <div className="app-header__subtitle">{t('appSubtitle')}</div>
+            <div className="app-header__subtitle">Logged in as: {session?.username}</div>
           </div>
         </Link>
 
         <nav className="app-header__nav">
-          <NavLink to="/" className="app-header__nav-link">
-            ← {t('navHome')}
-          </NavLink>
+          <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+            🔒 Logout
+          </button>
         </nav>
 
         <div className="app-header__actions">
@@ -154,33 +172,119 @@ function AdminLayout() {
 }
 
 /* ================================================================
+   DRIVER LAYOUT
+   ================================================================ */
+function DriverLayout() {
+  const { logout, session } = useAuth();
+
+  return (
+    <div className="app-layout">
+      <header className="app-header" style={{ background: 'linear-gradient(135deg, #1A5276, #2E86C1)' }}>
+        <Link to="/driver" className="app-header__logo">
+          <div className="app-header__emblem">🚌</div>
+          <div>
+            <div className="app-header__title">HRTC Driver Panel</div>
+            <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
+          </div>
+        </Link>
+        <nav className="app-header__nav">
+          <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+            🔒 Logout
+          </button>
+        </nav>
+      </header>
+      <main className="app-main">
+        <Outlet />
+      </main>
+      <ToastContainer />
+    </div>
+  );
+}
+
+/* ================================================================
+   CONDUCTOR LAYOUT
+   ================================================================ */
+function ConductorLayout() {
+  const { logout, session } = useAuth();
+
+  return (
+    <div className="app-layout">
+      <header className="app-header" style={{ background: 'linear-gradient(135deg, #148F77, #1ABC9C)' }}>
+        <Link to="/conductor" className="app-header__logo">
+          <div className="app-header__emblem">🎫</div>
+          <div>
+            <div className="app-header__title">HRTC Conductor Panel</div>
+            <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
+          </div>
+        </Link>
+        <nav className="app-header__nav">
+          <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+            🔒 Logout
+          </button>
+        </nav>
+      </header>
+      <main className="app-main">
+        <Outlet />
+      </main>
+      <ToastContainer />
+    </div>
+  );
+}
+
+/* ================================================================
    APP ROOT
    ================================================================ */
 export default function App() {
   return (
     <LanguageProvider>
       <SimulationProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Citizen routes */}
-            <Route element={<CitizenLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/track/:busId" element={<LiveTrack />} />
-              <Route path="/stop/:stopId" element={<StopDetail />} />
-              <Route path="/route/:routeId" element={<RouteDetail />} />
-              <Route path="/sms" element={<SMSDemo />} />
-            </Route>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public login */}
+              <Route path="/login" element={<RoleLogin />} />
 
-            {/* Admin routes */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="fleet" element={<FleetMap />} />
-              <Route path="routes" element={<RouteManager />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="alerts" element={<Alerts />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+              {/* Customer routes — restricted to 'customer' role */}
+              <Route element={<RequireRole allowedRoles={['customer']} />}>
+                <Route element={<CitizenLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/track/:busId" element={<LiveTrack />} />
+                  <Route path="/stop/:stopId" element={<StopDetail />} />
+                  <Route path="/route/:routeId" element={<RouteDetail />} />
+                  <Route path="/sms" element={<SMSDemo />} />
+                </Route>
+              </Route>
+
+              {/* Driver routes — restricted to 'driver' role */}
+              <Route element={<RequireRole allowedRoles={['driver']} />}>
+                <Route path="/driver" element={<DriverLayout />}>
+                  <Route index element={<DriverDashboard />} />
+                </Route>
+              </Route>
+
+              {/* Conductor routes — restricted to 'conductor' role */}
+              <Route element={<RequireRole allowedRoles={['conductor']} />}>
+                <Route path="/conductor" element={<ConductorLayout />}>
+                  <Route index element={<ConductorDashboard />} />
+                </Route>
+              </Route>
+
+              {/* Admin routes — restricted to 'admin' role */}
+              <Route element={<RequireRole allowedRoles={['admin']} />}>
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="fleet" element={<FleetMap />} />
+                  <Route path="routes" element={<RouteManager />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="alerts" element={<Alerts />} />
+                </Route>
+              </Route>
+
+              {/* Catch-all: redirect to login */}
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </SimulationProvider>
     </LanguageProvider>
   );

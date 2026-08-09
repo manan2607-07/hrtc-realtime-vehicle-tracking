@@ -12,7 +12,7 @@ import ETABadge from '../../components/ETABadge';
 export default function LiveTrack() {
   const { busId } = useParams();
   const navigate = useNavigate();
-  const { busStates, addNotification, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast } = useSimulation();
+  const { busStates, addNotification } = useSimulation();
   const { t } = useLanguage();
   const [notifySet, setNotifySet] = useState(false);
   const [autoPan, setAutoPan] = useState(true);
@@ -20,7 +20,6 @@ export default function LiveTrack() {
   const busState = busStates[busId];
   const vehicle = VEHICLES.find(v => v.id === busId);
   const route = ROUTES.find(r => r.id === busState?.routeId);
-  const isBroadcastingGps = activeGpsVehicleId === busId;
 
   // Ping age for display
   const pingAge = useMemo(() => {
@@ -147,52 +146,30 @@ export default function LiveTrack() {
         </div>
       </div>
 
-      {/* Driver & HRTC Crew Telemetry Cards */}
+      {/* Driver Info (Customer View — Private details hidden) */}
       <div className="grid grid--4 mb-4">
         <div className="stat-card" style={{ gridColumn: 'span 2' }}>
-          <div className="stat-card__label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>👤 Driver & Crew Telemetry</span>
-            <span className={`badge ${isBroadcastingGps ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
-              {isBroadcastingGps ? '● Phone GPS Stream Active' : '● AIS-140 Hardware Telemetry'}
-            </span>
-          </div>
+          <div className="stat-card__label">👤 Driver on Duty</div>
           <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>
-                {vehicle.driver?.name} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400, color: 'var(--color-primary)' }}>({vehicle.driver?.badge})</span>
-              </div>
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                Driver License: <strong>{vehicle.driver?.licenseNo}</strong> · Emp ID: <strong>{vehicle.driver?.empId}</strong> ({vehicle.driver?.experienceYears} yrs exp)
-              </div>
+              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                Driver Phone: 📞 <strong>{vehicle.driver?.phone}</strong>
+                {vehicle.driver?.experienceYears} years experience · {vehicle.driver?.badge}
               </div>
               {vehicle.driver?.conductor && (
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                  Conductor: 🎫 <strong>{vehicle.driver.conductor.name}</strong> ({vehicle.driver.conductor.empId}) · 📞 {vehicle.driver.conductor.phone}
+                  Conductor: {vehicle.driver.conductor.name}
                 </div>
               )}
-            </div>
-            <div className="flex flex--gap-2">
-              <button
-                className={`btn ${isBroadcastingGps ? 'btn--danger' : 'btn--outline'} btn--sm`}
-                style={{ fontSize: 'var(--font-size-xs)' }}
-                onClick={() => {
-                  if (isBroadcastingGps) stopDriverGpsBroadcast(busId);
-                  else startDriverGpsBroadcast(busId);
-                }}
-              >
-                📡 {isBroadcastingGps ? 'Stop Driver GPS Stream' : 'Broadcast Driver Phone GPS'}
-              </button>
             </div>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card__label">Speed & Service Class</div>
+          <div className="stat-card__label">Speed & Service</div>
           <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-            {vehicle.serviceClass || 'HRTC Express Service'}
+            {vehicle.serviceClass || 'HRTC Service'}
           </div>
         </div>
         <div className="stat-card">
@@ -201,7 +178,7 @@ export default function LiveTrack() {
             {pingAge != null ? (pingAge < 60 ? `${pingAge}${t('secondsAgo')}` : `${Math.round(pingAge / 60)}${t('minutesAgo')}`) : '—'}
           </div>
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-            Unit: {vehicle.ais140DeviceId || 'AIS-140 GPS'}
+            GPS Tracked
           </div>
         </div>
       </div>
