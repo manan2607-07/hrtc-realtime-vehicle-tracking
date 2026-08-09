@@ -12,7 +12,7 @@ import ETABadge from '../../components/ETABadge';
 export default function LiveTrack() {
   const { busId } = useParams();
   const navigate = useNavigate();
-  const { busStates, addNotification } = useSimulation();
+  const { busStates, addNotification, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast } = useSimulation();
   const { t } = useLanguage();
   const [notifySet, setNotifySet] = useState(false);
   const [autoPan, setAutoPan] = useState(true);
@@ -20,6 +20,7 @@ export default function LiveTrack() {
   const busState = busStates[busId];
   const vehicle = VEHICLES.find(v => v.id === busId);
   const route = ROUTES.find(r => r.id === busState?.routeId);
+  const isBroadcastingGps = activeGpsVehicleId === busId;
 
   // Ping age for display
   const pingAge = useMemo(() => {
@@ -146,39 +147,54 @@ export default function LiveTrack() {
         </div>
       </div>
 
-      {/* Driver Information & Speed Cards */}
+      {/* Driver Information & Commercial Telemetry Cards */}
       <div className="grid grid--4 mb-4">
         <div className="stat-card" style={{ gridColumn: 'span 2' }}>
-          <div className="stat-card__label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <span>👤 Driver Information</span>
+          <div className="stat-card__label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>👤 Driver & AIS-140 GPS Unit</span>
+            <span className={`badge ${isBroadcastingGps ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
+              {isBroadcastingGps ? '● Phone GPS Broadcast Active' : '● AIS-140 Hardware GPS'}
+            </span>
           </div>
-          <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)' }}>
+          <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                 Emp ID: <strong>{vehicle.driver?.empId}</strong> · Exp: <strong>{vehicle.driver?.experienceYears} yrs</strong>
               </div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Driver Telemetry: 📞 <strong>{vehicle.driver?.phone}</strong>
+              </div>
             </div>
-            {vehicle.driver?.phone && (
-              <a
-                href={`tel:${vehicle.driver.phone}`}
-                className="btn btn--outline btn--sm"
+            <div className="flex flex--gap-2">
+              <button
+                className={`btn ${isBroadcastingGps ? 'btn--danger' : 'btn--outline'} btn--sm`}
                 style={{ fontSize: 'var(--font-size-xs)' }}
+                onClick={() => {
+                  if (isBroadcastingGps) stopDriverGpsBroadcast(busId);
+                  else startDriverGpsBroadcast(busId);
+                }}
               >
-                📞 {vehicle.driver.phone}
-              </a>
-            )}
+                📡 {isBroadcastingGps ? 'Stop Driver GPS Stream' : 'Broadcast Driver Phone GPS'}
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card__label">Speed</div>
+          <div className="stat-card__label">Speed & Telemetry</div>
           <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+            14 Satellites · AIS-140 Unit
+          </div>
         </div>
         <div className="stat-card">
           <div className="stat-card__label">{t('lastUpdated')}</div>
           <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
             {pingAge != null ? (pingAge < 60 ? `${pingAge}${t('secondsAgo')}` : `${Math.round(pingAge / 60)}${t('minutesAgo')}`) : '—'}
+          </div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+            Ping Latency: ~120ms (4G M2M)
           </div>
         </div>
       </div>

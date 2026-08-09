@@ -60,6 +60,74 @@ export function SimulationProvider({ children }) {
     setNotifications(prev => prev.filter(n => n.id !== notifId));
   }, []);
 
+  const [activeGpsVehicleId, setActiveGpsVehicleId] = useState(null);
+  const geoWatchRef = useRef(null);
+
+  const startDriverGpsBroadcast = useCallback((vehicleId) => {
+    if (!navigator.geolocation) {
+      addNotification({
+        type: 'warning',
+        title: 'GPS Not Supported',
+        message: 'Your browser does not support live GPS location streaming.',
+      });
+      return;
+    }
+
+    if (geoWatchRef.current) {
+      navigator.geolocation.clearWatch(geoWatchRef.current);
+    }
+
+    setActiveGpsVehicleId(vehicleId);
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude, speed, heading } = pos.coords;
+        simRef.current?.updateRealGps(vehicleId, {
+          lat: latitude,
+          lng: longitude,
+          speed: speed,
+          heading: heading,
+        });
+      },
+      (err) => {
+        addNotification({
+          type: 'danger',
+          title: 'Driver GPS Stream Error',
+          message: err.message || 'Could not access device GPS location.',
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000,
+      }
+    );
+
+    geoWatchRef.current = watchId;
+
+    addNotification({
+      type: 'success',
+      title: 'Driver GPS Broadcast Active',
+      message: `Streaming live device GPS coordinates to bus tracker.`,
+    });
+  }, [addNotification]);
+
+  const stopDriverGpsBroadcast = useCallback((vehicleId) => {
+    if (geoWatchRef.current) {
+      navigator.geolocation.clearWatch(geoWatchRef.current);
+      geoWatchRef.current = null;
+    }
+    if (vehicleId) {
+      simRef.current?.stopRealGps(vehicleId);
+    }
+    setActiveGpsVehicleId(null);
+    addNotification({
+      type: 'info',
+      title: 'Driver GPS Broadcast Stopped',
+      message: 'Returned to fleet schedule tracking mode.',
+    });
+  }, [addNotification]);
+
   return (
     <SimulationContext.Provider value={{
       busStates,
@@ -72,6 +140,9 @@ export function SimulationProvider({ children }) {
       notifications,
       addNotification,
       dismissNotification,
+      activeGpsVehicleId,
+      startDriverGpsBroadcast,
+      stopDriverGpsBroadcast,
     }}>
       {children}
     </SimulationContext.Provider>

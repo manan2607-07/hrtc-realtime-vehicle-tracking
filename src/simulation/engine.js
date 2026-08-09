@@ -105,6 +105,13 @@ function tickBus(busState, isTouristSeason) {
   if (!route) return busState;
 
   const newState = { ...busState };
+
+  // If bus is being controlled by real driver device GPS stream, compute ETAs and return
+  if (newState.isRealDeviceGps) {
+    newState.etas = computeETAs(newState, isTouristSeason);
+    return newState;
+  }
+
   const waypoints = route.waypoints;
   const totalWp = waypoints.length;
 
@@ -372,6 +379,29 @@ export function createSimulation() {
       anomalyLog = anomalyLog.map(a =>
         a.id === alertId ? { ...a, status: 'resolved' } : a
       );
+    },
+
+    updateRealGps(vehicleId, { lat, lng, speed, heading }) {
+      if (busStates[vehicleId]) {
+        busStates[vehicleId] = {
+          ...busStates[vehicleId],
+          lat,
+          lng,
+          speed: speed != null ? Math.round(speed * 3.6) : busStates[vehicleId].speed, // m/s to km/h if from Geolocation API
+          heading: heading ?? busStates[vehicleId].heading,
+          isRealDeviceGps: true,
+          lastPingTime: Date.now(),
+          status: VEHICLE_STATUS.RUNNING,
+          isSignalLost: false,
+        };
+        busStates[vehicleId].etas = computeETAs(busStates[vehicleId], isTouristSeason);
+      }
+    },
+
+    stopRealGps(vehicleId) {
+      if (busStates[vehicleId]) {
+        busStates[vehicleId].isRealDeviceGps = false;
+      }
     },
   };
 
