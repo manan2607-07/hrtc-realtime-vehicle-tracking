@@ -64,9 +64,6 @@ return (
         <NavLink to="/sms" className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
           {t('navSMS')}
         </NavLink>
-        <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-           Switch Role
-        </button>
       </nav>
 
       <div className="app-header__actions">
@@ -88,9 +85,6 @@ return (
           <NavLink to="/sms" className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
              {t('navSMS')}
           </NavLink>
-          <button className="app-header__nav-link" onClick={() => { setMobileNavOpen(false); logout(); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit', textAlign: 'left', width: '100%' }}>
-             Switch Role
-          </button>
           <div style={{ marginTop: 'auto', padding: 'var(--space-3)' }}>
             <LanguageToggle />
           </div>
