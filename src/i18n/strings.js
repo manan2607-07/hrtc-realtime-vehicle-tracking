@@ -13,7 +13,7 @@ export const STRINGS = {
     navHome: 'Home',
     navTrack: 'Track Bus',
     navRoutes: 'Routes',
-    navSMS: 'SMS Demo',
+    navSMS: 'SMS Bus Tracker',
     navAdmin: 'Admin Dashboard',
     navAlerts: 'Alerts',
     navReports: 'Reports',
@@ -73,7 +73,7 @@ export const STRINGS = {
     cleanFuel: 'Clean Fuel',
 
     // SMS Demo
-    smsDemo: 'SMS Query Demo',
+    smsDemo: 'SMS Bus Tracker',
     smsInstructions: 'Text a stop code to see the next buses',
     smsPlaceholder: 'Enter stop code (e.g., SML04)',
     smsSend: 'Send',
@@ -132,7 +132,7 @@ export const STRINGS = {
     navHome: 'होम',
     navTrack: 'बस ट्रैक करें',
     navRoutes: 'मार्ग',
-    navSMS: 'SMS डेमो',
+    navSMS: 'SMS बस ट्रैकर',
     navAdmin: 'एडमिन डैशबोर्ड',
     navAlerts: 'अलर्ट',
     navReports: 'रिपोर्ट',
@@ -192,7 +192,7 @@ export const STRINGS = {
     cleanFuel: 'स्वच्छ ईंधन',
 
     // SMS Demo
-    smsDemo: 'SMS क्वेरी डेमो',
+    smsDemo: 'SMS बस ट्रैकर',
     smsInstructions: 'अगली बसें देखने के लिए स्टॉप कोड टेक्स्ट करें',
     smsPlaceholder: 'स्टॉप कोड दर्ज करें (जैसे SML04)',
     smsSend: 'भेजें',
