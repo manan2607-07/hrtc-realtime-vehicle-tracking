@@ -18,7 +18,7 @@ const handleCustomer = () => {
 return (
   <div className="login-page">
     <div className="login-page__header">
-      <div className="login-page__emblem"></div>
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '80px', height: '80px', marginBottom: 'var(--space-3)', objectFit: 'contain' }} />
       <h1 className="login-page__title">HRTC Real-Time Vehicle Tracking</h1>
       <p className="login-page__subtitle">Himachal Road Transport Corporation</p>
     </div>
@@ -29,7 +29,6 @@ return (
         style={{ '--role-color': '#1A5276' }}
         onClick={handleCustomer}
       >
-        <div className="role-card__icon"></div>
         <div className="role-card__title">Passenger / Citizen</div>
         <div className="role-card__subtitle">Track buses, view ETAs, and plan your journey across Himachal Pradesh</div>
         <div className="role-card__action">Enter Bus Tracker →</div>
@@ -37,7 +36,8 @@ return (
     </div>
 
     <div className="login-page__footer">
-      <p>© 2025 HRTC — Himachal Road Transport Corporation. All rights reserved.</p>
+      <p>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</p>
+      <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>Official Real-Time Vehicle Tracking & Telemetry System</p>
     </div>
   </div>
 );

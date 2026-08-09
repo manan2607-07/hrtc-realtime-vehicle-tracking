@@ -90,7 +90,7 @@ const staffRoles = [
 return (
   <div className="login-page">
     <div className="login-page__header">
-      <div className="login-page__emblem"></div>
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '80px', height: '80px', marginBottom: 'var(--space-3)', objectFit: 'contain' }} />
       <h1 className="login-page__title">HRTC Staff Portal</h1>
       <p className="login-page__subtitle">Authorized HRTC Personnel Only — Credential Verification Required</p>
     </div>
@@ -209,8 +209,8 @@ return (
     )}
 
     <div className="login-page__footer">
-      <p>© 2025 HRTC — Himachal Road Transport Corporation. All rights reserved.</p>
-      <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>Unauthorized access is a punishable offence under IT Act 2000</p>
+      <p>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</p>
+      <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>Unauthorized access is a punishable offence under IT Act 2000</p>
     </div>
   </div>
 );

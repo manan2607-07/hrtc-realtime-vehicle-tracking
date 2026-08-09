@@ -50,7 +50,7 @@ return (
   <div className="app-layout">
     <header className="app-header">
       <Link to="/" className="app-header__logo">
-        <div className="app-header__emblem"></div>
+        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
         <div>
           <div className="app-header__title">{t('appName')}</div>
           <div className="app-header__subtitle">{t('appSubtitle')}</div>
@@ -96,6 +96,25 @@ return (
       <Outlet />
     </main>
 
+    <footer style={{
+      marginTop: 'var(--space-8)',
+      padding: 'var(--space-6) var(--space-4)',
+      borderTop: '1px solid var(--color-border)',
+      background: 'var(--color-surface)',
+      textAlign: 'center',
+      fontSize: 'var(--font-size-xs)',
+      color: 'var(--color-text-secondary)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+        <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Himachal Road Transport Corporation</span>
+      </div>
+      <div>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</div>
+      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+        Official Real-Time Passenger Telemetry & Vehicle Tracking System · Government of Himachal Pradesh
+      </div>
+    </footer>
+
     <ToastContainer />
   </div>
 );
@@ -112,7 +131,7 @@ return (
   <div className="admin-layout">
     <header className="admin-header">
       <Link to="/admin" className="app-header__logo" style={{ textDecoration: 'none' }}>
-        <div className="app-header__emblem" style={{ background: 'rgba(255,255,255,0.2)' }}></div>
+        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
         <div>
           <div className="app-header__title">HRTC {t('navAdmin')}</div>
           <div className="app-header__subtitle">Logged in as: {session?.username}</div>
@@ -176,7 +195,7 @@ return (
   <div className="app-layout">
     <header className="app-header">
       <Link to="/driver" className="app-header__logo">
-        <div className="app-header__emblem"></div>
+        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
         <div>
           <div className="app-header__title">HRTC Driver Panel</div>
           <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
@@ -206,7 +225,7 @@ return (
   <div className="app-layout">
     <header className="app-header">
       <Link to="/conductor" className="app-header__logo">
-        <div className="app-header__emblem"></div>
+        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
         <div>
           <div className="app-header__title">HRTC Conductor Panel</div>
           <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
