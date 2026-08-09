@@ -41,6 +41,9 @@ const handleSend = () => {
       let response = `HRTC Live Telemetry Feed\n`;
       response += `Bus: ${targetBus.busNumber} (${targetBus.registrationNo})\n`;
       response += `Driver: ${targetBus.driver?.name} (${targetBus.driver?.phone})\n`;
+      if (targetBus.driver?.conductor) {
+        response += `Conductor: ${targetBus.driver.conductor.name} (${targetBus.driver.conductor.phone})\n`;
+      }
       response += `Route: Rte ${route?.routeNo} - ${route?.name}\n`;
       response += `Status: ${bs?.status?.toUpperCase()} (${Math.round(bs?.speed || 0)} km/h)\n`;
       if (nextEta) {
@@ -89,7 +92,10 @@ const handleSend = () => {
     top3.forEach((b, i) => {
       const conf = b.eta.confidence === 'live' ? '[Live]' : '[Est]';
       response += `${i + 1}. ${b.vehicle.busNumber} (${b.vehicle.registrationNo}) · Rte ${b.route.routeNo}\n`;
-      response += ` Driver: ${b.vehicle.driver?.name || 'Assigned'}\n`;
+      response += ` Driver: ${b.vehicle.driver?.name || 'Assigned'} (${b.vehicle.driver?.phone || 'N/A'})\n`;
+      if (b.vehicle.driver?.conductor) {
+        response += ` Conductor: ${b.vehicle.driver.conductor.name} (${b.vehicle.driver.conductor.phone})\n`;
+      }
       response += ` ETA: ${formatETA(b.eta.etaMinutes)} ${conf} | Halt: ${b.eta.haltMinutes}m\n`;
       response += ` Arr: ${formatClockTime(b.eta.arrivalTime)} | Dep: ${formatClockTime(b.eta.departureTime)}\n`;
       response += ` ${b.vehicle.fuelType === 'Electric' ? 'Electric' : b.vehicle.emissionStandard + ' ' + b.vehicle.fuelType}\n`;
