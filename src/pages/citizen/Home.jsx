@@ -274,36 +274,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Quick Search Suggestions */}
-              <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>Try Searching:</span>
-                {[
-                  { label: '🚌 Bus #101', value: '101' },
-                  { label: '🚌 Bus #102', value: '102' },
-                  { label: '🚌 Bus #501', value: '501' },
-                  { label: '⛰️ Shimla Route', value: 'Shimla' },
-                  { label: '🏔️ Kufri Route', value: 'Kufri' },
-                  { label: '🌲 Dharamshala', value: 'Dharamshala' },
-                ].map((chip) => (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    onClick={() => { setSearchQuery(chip.value); setHasSearched(true); }}
-                    style={{
-                      background: 'var(--color-background-alt)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-full)',
-                      padding: '3px 10px',
-                      fontSize: 'var(--font-size-xs)',
-                      cursor: 'pointer',
-                      color: 'var(--color-text)',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
             </form>
           )}
         </div>
