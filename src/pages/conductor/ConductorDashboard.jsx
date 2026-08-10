@@ -15,7 +15,11 @@ export default function ConductorDashboard() {
   const vehicleId = session?.vehicleId;
   const vehicle = VEHICLES.find(v => v.id === vehicleId);
   const busState = busStates[vehicleId];
-  const route = busState ? ROUTES.find(r => r.id === busState.routeId) : null;
+  const route = (busState ? ROUTES.find(r => r.id === busState.routeId) : null) || ROUTES.find(r => r.id === vehicle?.routeId) || ROUTES[0];
+
+  const originName = route?.origin || 'Shimla ISBT (Tutikandi)';
+  const destName = route?.destination || route?.stops?.[route?.stops?.length - 1]?.name || 'Kufri';
+  const midStopName = route?.stops?.[Math.floor((route?.stops?.length || 2) / 2)]?.name || route?.stops?.[1]?.name || 'Sanjauli';
 
   // Initialize seat state (Seats 1 to vehicle capacity)
   const capacity = vehicle?.capacity || 40;
@@ -24,32 +28,32 @@ export default function ConductorDashboard() {
     for (let i = 1; i <= capacity; i++) {
       initialSeats[i] = { occupied: false, passengerName: '', destination: '', ticketNo: '', fare: 0, boardedAt: '', time: '' };
     }
-    // Initial sample passengers on board
+    // Initial sample passengers on board with real station names
     initialSeats[1] = {
       occupied: true,
       passengerName: 'Rohan Sharma',
-      destination: route?.stops?.[route.stops.length - 1]?.name || 'Destination',
+      destination: destName,
       ticketNo: 'TKT-1001',
       fare: 50,
-      boardedAt: route?.origin || 'Origin',
+      boardedAt: originName,
       time: '09:15 AM',
     };
     initialSeats[2] = {
       occupied: true,
       passengerName: 'Pooja Verma',
-      destination: route?.stops?.[Math.floor((route?.stops?.length || 2) / 2)]?.name || 'Intermediate',
+      destination: midStopName,
       ticketNo: 'TKT-1002',
       fare: 30,
-      boardedAt: route?.origin || 'Origin',
+      boardedAt: originName,
       time: '09:20 AM',
     };
     initialSeats[5] = {
       occupied: true,
       passengerName: 'Vikram Thakur',
-      destination: route?.stops?.[route.stops.length - 1]?.name || 'Destination',
+      destination: destName,
       ticketNo: 'TKT-1003',
       fare: 80,
-      boardedAt: route?.origin || 'Origin',
+      boardedAt: originName,
       time: '09:25 AM',
     };
     return initialSeats;
@@ -65,9 +69,9 @@ export default function ConductorDashboard() {
   const [ticketsSold, setTicketsSold] = useState(3);
   const [revenue, setRevenue] = useState(160);
   const [tripLog, setTripLog] = useState([
-    { type: 'board', time: '09:25 AM', stop: route?.origin || 'Origin', amount: 80, detail: 'Seat #05 — Vikram Thakur' },
-    { type: 'board', time: '09:20 AM', stop: route?.origin || 'Origin', amount: 30, detail: 'Seat #02 — Pooja Verma' },
-    { type: 'board', time: '09:15 AM', stop: route?.origin || 'Origin', amount: 50, detail: 'Seat #01 — Rohan Sharma' },
+    { type: 'board', time: '09:25 AM', stop: originName, amount: 80, detail: `Seat #05 — Vikram Thakur (To: ${destName})` },
+    { type: 'board', time: '09:20 AM', stop: originName, amount: 30, detail: `Seat #02 — Pooja Verma (To: ${midStopName})` },
+    { type: 'board', time: '09:15 AM', stop: originName, amount: 50, detail: `Seat #01 — Rohan Sharma (To: ${destName})` },
   ]);
 
   const upcomingStops = useMemo(() => {
