@@ -7,6 +7,31 @@ import { VEHICLES } from '../../simulation/vehicles';
 import { formatClockTime } from '../../simulation/eta';
 import ETABadge from '../../components/ETABadge';
 
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function findClosestWaypointIdx(lat, lng, waypoints) {
+  let minDist = Infinity;
+  let minIdx = 0;
+  for (let i = 0; i < waypoints.length; i++) {
+    const d = haversineKm(lat, lng, waypoints[i][0], waypoints[i][1]);
+    if (d < minDist) {
+      minDist = d;
+      minIdx = i;
+    }
+  }
+  return minIdx;
+}
+
 function getStopInfoByName(stopName) {
   for (const r of ROUTES) {
     if (r.origin === stopName) {
@@ -28,38 +53,40 @@ function calculateFareByDistance(originStopName, destStopName, currentRoute) {
 
   let distKm = 0;
 
-  // 1. Check if both stops are on the current route
-  if (currentRoute && currentRoute.stops) {
-    const origIdx = currentRoute.stops.findIndex(s => s.name === originStopName || currentRoute.origin === originStopName);
-    const destIdx = currentRoute.stops.findIndex(s => s.name === destStopName);
+  // 1. Calculate exact waypoint road distance if stops are on current route
+  if (currentRoute && currentRoute.waypoints && currentRoute.waypoints.length >= 2) {
+    const stopA = currentRoute.stops?.find(s => s.name === originStopName) || { lat: currentRoute.waypoints[0][0], lng: currentRoute.waypoints[0][1] };
+    const stopB = currentRoute.stops?.find(s => s.name === destStopName);
 
-    if (origIdx !== -1 && destIdx !== -1) {
-      const scheduledDiff = Math.abs((currentRoute.stops[destIdx]?.scheduledMin || 0) - (currentRoute.stops[origIdx]?.scheduledMin || 0));
-      distKm = Math.round((scheduledDiff / (currentRoute.typicalDurationMin || 60)) * (currentRoute.distanceKm || 20));
-      if (distKm === 0 && origIdx !== destIdx) {
-        distKm = Math.round(Math.abs(destIdx - origIdx) * (currentRoute.distanceKm / Math.max(1, currentRoute.stops.length - 1)));
+    if (stopB) {
+      const idxA = findClosestWaypointIdx(stopA.lat, stopA.lng, currentRoute.waypoints);
+      const idxB = findClosestWaypointIdx(stopB.lat, stopB.lng, currentRoute.waypoints);
+
+      const start = Math.min(idxA, idxB);
+      const end = Math.max(idxA, idxB);
+
+      let roadSum = 0;
+      for (let i = start; i < end && i < currentRoute.waypoints.length - 1; i++) {
+        roadSum += haversineKm(
+          currentRoute.waypoints[i][0], currentRoute.waypoints[i][1],
+          currentRoute.waypoints[i + 1][0], currentRoute.waypoints[i + 1][1]
+        );
       }
+      distKm = Math.round(roadSum * 1.25); // Account for mountain road curves
     }
   }
 
-  // 2. Fallback to Haversine geographic distance
+  // 2. Fallback to exact geographic road distance for network stations
   if (!distKm || distKm <= 0) {
     const stopA = getStopInfoByName(originStopName);
     const stopB = getStopInfoByName(destStopName);
     if (stopA && stopB) {
-      const R = 6371;
-      const dLat = (stopB.lat - stopA.lat) * (Math.PI / 180);
-      const dLon = (stopB.lng - stopA.lng) * (Math.PI / 180);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(stopA.lat * (Math.PI / 180)) * Math.cos(stopB.lat * (Math.PI / 180)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      distKm = Math.round(R * c * 1.35); // Mountain road factor
+      const straightKm = haversineKm(stopA.lat, stopA.lng, stopB.lat, stopB.lng);
+      distKm = Math.round(straightKm * 1.35); // Mountain road multiplier
     }
   }
 
-  if (!distKm || distKm < 1) distKm = 4;
+  if (!distKm || distKm < 1) distKm = 3;
 
   // 3. HRTC Distance Tariff Tiers
   let fare = 15;
