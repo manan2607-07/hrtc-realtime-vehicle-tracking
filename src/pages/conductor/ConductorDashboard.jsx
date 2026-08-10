@@ -326,7 +326,7 @@ export default function ConductorDashboard() {
               {/* DESTINATION STOP */}
               <div>
                 <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '6px' }}>
-                  Destination Stop (All Stations)
+                  Destination Stop
                 </label>
                 <select
                   value={destinationStop}
