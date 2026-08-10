@@ -7,6 +7,72 @@ import { VEHICLES } from '../../simulation/vehicles';
 import { formatClockTime } from '../../simulation/eta';
 import ETABadge from '../../components/ETABadge';
 
+function getStopInfoByName(stopName) {
+  for (const r of ROUTES) {
+    if (r.origin === stopName) {
+      const firstStop = r.stops[0];
+      return { lat: firstStop?.lat || 31.1048, lng: firstStop?.lng || 77.165, name: stopName };
+    }
+    if (r.destination === stopName) {
+      const lastStop = r.stops[r.stops.length - 1];
+      return { lat: lastStop?.lat || 31.1048, lng: lastStop?.lng || 77.165, name: stopName };
+    }
+    const found = r.stops.find(s => s.name === stopName);
+    if (found) return found;
+  }
+  return null;
+}
+
+function calculateFareByDistance(originStopName, destStopName, currentRoute) {
+  if (!destStopName) return { fare: '', distanceKm: 0 };
+
+  let distKm = 0;
+
+  // 1. Check if both stops are on the current route
+  if (currentRoute && currentRoute.stops) {
+    const origIdx = currentRoute.stops.findIndex(s => s.name === originStopName || currentRoute.origin === originStopName);
+    const destIdx = currentRoute.stops.findIndex(s => s.name === destStopName);
+
+    if (origIdx !== -1 && destIdx !== -1) {
+      const scheduledDiff = Math.abs((currentRoute.stops[destIdx]?.scheduledMin || 0) - (currentRoute.stops[origIdx]?.scheduledMin || 0));
+      distKm = Math.round((scheduledDiff / (currentRoute.typicalDurationMin || 60)) * (currentRoute.distanceKm || 20));
+      if (distKm === 0 && origIdx !== destIdx) {
+        distKm = Math.round(Math.abs(destIdx - origIdx) * (currentRoute.distanceKm / Math.max(1, currentRoute.stops.length - 1)));
+      }
+    }
+  }
+
+  // 2. Fallback to Haversine geographic distance
+  if (!distKm || distKm <= 0) {
+    const stopA = getStopInfoByName(originStopName);
+    const stopB = getStopInfoByName(destStopName);
+    if (stopA && stopB) {
+      const R = 6371;
+      const dLat = (stopB.lat - stopA.lat) * (Math.PI / 180);
+      const dLon = (stopB.lng - stopA.lng) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(stopA.lat * (Math.PI / 180)) * Math.cos(stopB.lat * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      distKm = Math.round(R * c * 1.35); // Mountain road factor
+    }
+  }
+
+  if (!distKm || distKm < 1) distKm = 4;
+
+  // 3. HRTC Distance Tariff Tiers
+  let fare = 15;
+  if (distKm <= 5) fare = 15;
+  else if (distKm <= 15) fare = 30;
+  else if (distKm <= 35) fare = 50;
+  else if (distKm <= 70) fare = 80;
+  else if (distKm <= 140) fare = 120;
+  else fare = 200;
+
+  return { fare, distanceKm: distKm };
+}
+
 export default function ConductorDashboard() {
   const { session } = useAuth();
   const { busStates, addNotification } = useSimulation();
@@ -64,6 +130,7 @@ export default function ConductorDashboard() {
   const [selectedSeatNo, setSelectedSeatNo] = useState('');
   const [destinationStop, setDestinationStop] = useState('');
   const [fareAmount, setFareAmount] = useState('');
+  const [calculatedDistance, setCalculatedDistance] = useState(0);
 
   // Financial & Stats
   const [ticketsSold, setTicketsSold] = useState(3);
@@ -79,6 +146,19 @@ export default function ConductorDashboard() {
   }, [busState?.etas]);
 
   const currentStopName = upcomingStops[0]?.stopName || route?.origin || 'En Route';
+
+  // Handle Destination change & auto calculate fare
+  const handleDestinationChange = (selectedDest) => {
+    setDestinationStop(selectedDest);
+    if (selectedDest) {
+      const calc = calculateFareByDistance(currentStopName || originName, selectedDest, route);
+      setFareAmount(calc.fare);
+      setCalculatedDistance(calc.distanceKm);
+    } else {
+      setFareAmount('');
+      setCalculatedDistance(0);
+    }
+  };
 
   // Count active occupied seats
   const occupiedSeatsList = useMemo(() => {
@@ -346,7 +426,7 @@ export default function ConductorDashboard() {
                 </label>
                 <select
                   value={destinationStop}
-                  onChange={e => setDestinationStop(e.target.value)}
+                  onChange={e => handleDestinationChange(e.target.value)}
                   required
                   style={{
                     width: '100%',
@@ -394,12 +474,12 @@ export default function ConductorDashboard() {
                   }}
                 >
                   <option value="" disabled>Select Ticket Fare</option>
-                  <option value={15}>₹15 (Local Stop)</option>
-                  <option value={30}>₹30 (Suburban)</option>
-                  <option value={50}>₹50 (Standard Hill)</option>
-                  <option value={80}>₹80 (Express Distance)</option>
-                  <option value={120}>₹120 (Long Distance)</option>
-                  <option value={200}>₹200 (Highway / Volvo)</option>
+                  <option value={15}>₹15 (Local Stop ≤ 5km)</option>
+                  <option value={30}>₹30 (Suburban 6-15km)</option>
+                  <option value={50}>₹50 (Standard Hill 16-35km)</option>
+                  <option value={80}>₹80 (Express Distance 36-70km)</option>
+                  <option value={120}>₹120 (Long Distance 71-140km)</option>
+                  <option value={200}>₹200 (Interstate/Volvo &gt;140km)</option>
                 </select>
               </div>
 
@@ -425,6 +505,27 @@ export default function ConductorDashboard() {
               </div>
 
             </div>
+
+            {calculatedDistance > 0 && fareAmount && (
+              <div
+                style={{
+                  marginTop: '12px',
+                  padding: '8px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-background-alt)',
+                  border: '1px dashed var(--color-primary)',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: 'var(--color-text)',
+                }}
+              >
+                <span style={{ color: 'var(--color-primary)', fontWeight: 800 }}>Distance Tariff:</span>
+                From <strong>{currentStopName}</strong> to <strong>{destinationStop}</strong> is <strong>~{calculatedDistance} km</strong> ➔ Auto-Calculated HRTC Fare: <strong style={{ color: 'var(--color-primary)', fontSize: 'var(--font-size-sm)' }}>₹{fareAmount}</strong>
+              </div>
+            )}
           </form>
         </div>
       </div>
