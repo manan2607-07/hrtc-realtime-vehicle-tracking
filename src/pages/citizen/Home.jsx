@@ -338,9 +338,13 @@ export default function Home() {
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Driver Phone</div>
-                        <div style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-primary)' }}>
-                          {vehicle.driver?.phone}
-                        </div>
+                        <a
+                          href={`tel:${vehicle.driver?.phone?.replace(/[^0-9+]/g, '')}`}
+                          style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-primary)', textDecoration: 'underline', cursor: 'pointer' }}
+                          title="Click to call driver"
+                        >
+                          📞 {vehicle.driver?.phone}
+                        </a>
                       </div>
                     </div>
 

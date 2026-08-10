@@ -135,11 +135,26 @@ return (
                 License: {selectedVehicle.driver?.licenseNo}
               </div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                Emp ID: {selectedVehicle.driver?.empId} · {selectedVehicle.driver?.phone}
+                Emp ID: {selectedVehicle.driver?.empId} ·{' '}
+                <a
+                  href={`tel:${selectedVehicle.driver?.phone?.replace(/[^0-9+]/g, '')}`}
+                  style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                  title="Click to call driver"
+                >
+                  📞 {selectedVehicle.driver?.phone}
+                </a>
               </div>
               {selectedVehicle.driver?.conductor && (
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                  Conductor: {selectedVehicle.driver.conductor.name} ( {selectedVehicle.driver.conductor.phone})
+                  Conductor: {selectedVehicle.driver.conductor.name} ({' '}
+                  <a
+                    href={`tel:${selectedVehicle.driver.conductor.phone?.replace(/[^0-9+]/g, '')}`}
+                    style={{ color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                    title="Click to call conductor"
+                  >
+                    📞 {selectedVehicle.driver.conductor.phone}
+                  </a>
+                  )
                 </div>
               )}
             </div>

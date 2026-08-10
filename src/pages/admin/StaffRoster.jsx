@@ -128,7 +128,13 @@ export default function StaffRoster() {
                     License: <strong style={{ color: 'var(--color-text)' }}>{vehicle.driver?.licenseNo}</strong>
                   </div>
                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-primary)', fontWeight: 700, marginTop: '4px', fontFamily: 'monospace' }}>
-                    📞 {vehicle.driver?.phone}
+                    <a
+                      href={`tel:${vehicle.driver?.phone?.replace(/[^0-9+]/g, '')}`}
+                      style={{ color: 'var(--color-primary)', textDecoration: 'underline', cursor: 'pointer' }}
+                      title="Click to call driver"
+                    >
+                      📞 {vehicle.driver?.phone}
+                    </a>
                   </div>
                 </div>
 
@@ -145,7 +151,13 @@ export default function StaffRoster() {
                     Duty Status: <strong style={{ color: 'var(--color-success)' }}>On Duty</strong>
                   </div>
                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-primary)', fontWeight: 700, marginTop: '4px', fontFamily: 'monospace' }}>
-                    📞 {vehicle.conductor?.phone}
+                    <a
+                      href={`tel:${vehicle.conductor?.phone?.replace(/[^0-9+]/g, '')}`}
+                      style={{ color: 'var(--color-accent)', textDecoration: 'underline', cursor: 'pointer' }}
+                      title="Click to call conductor"
+                    >
+                      📞 {vehicle.conductor?.phone}
+                    </a>
                   </div>
                 </div>
               </div>

@@ -160,14 +160,30 @@ return (
               Driver: {vehicle.driver?.name}
             </div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-              Driver Phone: <strong>{vehicle.driver?.phone}</strong> · Emp ID: {vehicle.driver?.empId}
+              Driver Phone:{' '}
+              <a
+                href={`tel:${vehicle.driver?.phone?.replace(/[^0-9+]/g, '')}`}
+                style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
+                title="Click to call driver"
+              >
+                {vehicle.driver?.phone}
+              </a>{' '}
+              · Emp ID: {vehicle.driver?.empId}
             </div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
               {vehicle.driver?.experienceYears} yrs exp · {vehicle.driver?.badge}
             </div>
             {vehicle.driver?.conductor && (
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                Conductor: <strong>{vehicle.driver.conductor.name}</strong> · Phone: <strong>{vehicle.driver.conductor.phone}</strong> (ID: {vehicle.driver.conductor.empId})
+                Conductor: <strong>{vehicle.driver.conductor.name}</strong> · Phone:{' '}
+                <a
+                  href={`tel:${vehicle.driver.conductor.phone?.replace(/[^0-9+]/g, '')}`}
+                  style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
+                  title="Click to call conductor"
+                >
+                  {vehicle.driver.conductor.phone}
+                </a>{' '}
+                (ID: {vehicle.driver.conductor.empId})
               </div>
             )}
           </div>

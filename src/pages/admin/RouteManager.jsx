@@ -76,7 +76,14 @@ return (
                     <td>
                       <div style={{ fontWeight: 500 }}> {v.driver?.name}</div>
                       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-                        ID: {v.driver?.empId} · {v.driver?.phone}
+                        ID: {v.driver?.empId} ·{' '}
+                        <a
+                          href={`tel:${v.driver?.phone?.replace(/[^0-9+]/g, '')}`}
+                          style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                          title="Click to call driver"
+                        >
+                          📞 {v.driver?.phone}
+                        </a>
                       </div>
                     </td>
                     <td>
