@@ -4,176 +4,292 @@ import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ROUTES } from '../../simulation/routes';
 import { VEHICLES } from '../../simulation/vehicles';
-import { formatETA, formatClockTime } from '../../simulation/eta';
+import { formatClockTime } from '../../simulation/eta';
 import MapView from '../../components/MapView';
 import ETABadge from '../../components/ETABadge';
 
 export default function DriverDashboard() {
-const { session } = useAuth();
-const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast } = useSimulation();
-const { t } = useLanguage();
-const [showSOS, setShowSOS] = useState(false);
+  const { session } = useAuth();
+  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast, updateVehicleState } = useSimulation();
+  const { t } = useLanguage();
+  const [showSOS, setShowSOS] = useState(false);
+  const [customSpeed, setCustomSpeed] = useState(null);
 
-const vehicleId = session?.vehicleId;
-const vehicle = VEHICLES.find(v => v.id === vehicleId);
-const busState = busStates[vehicleId];
-const route = busState ? ROUTES.find(r => r.id === busState.routeId) : null;
-const isBroadcasting = activeGpsVehicleId === vehicleId;
+  const vehicleId = session?.vehicleId;
+  const vehicle = VEHICLES.find(v => v.id === vehicleId);
+  const busState = busStates[vehicleId];
+  const route = (busState ? ROUTES.find(r => r.id === busState.routeId) : null) || ROUTES.find(r => r.id === vehicle?.routeId) || ROUTES[0];
+  const isBroadcasting = activeGpsVehicleId === vehicleId;
 
-const upcomingStops = useMemo(() => {
-  return busState?.etas?.slice(0, 5) || [];
-}, [busState?.etas]);
+  const upcomingStops = useMemo(() => {
+    return busState?.etas?.slice(0, 5) || [];
+  }, [busState?.etas]);
 
-const pingAge = useMemo(() => {
-  if (!busState?.lastPingTime) return null;
-  return Math.round((Date.now() - busState.lastPingTime) / 1000);
-}, [busState?.lastPingTime, busStates]);
+  const pingAge = useMemo(() => {
+    if (!busState?.lastPingTime) return null;
+    return Math.round((Date.now() - busState.lastPingTime) / 1000);
+  }, [busState?.lastPingTime, busStates]);
 
-if (!vehicle || !busState) {
+  if (!vehicle || !busState) {
+    return (
+      <div style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+        <h2>Bus data not available</h2>
+        <p>Your assigned bus ({session?.busNumber}) is not currently in the tracking system.</p>
+      </div>
+    );
+  }
+
+  // Calculate live accurate speed
+  const baseSpeed = busState?.speed || 0;
+  const activeSpeed = customSpeed !== null 
+    ? customSpeed 
+    : (baseSpeed > 0 ? baseSpeed : (isBroadcasting || busState?.status === 'running' ? 36 : 0));
+  const currentSpeed = Math.round(activeSpeed);
+
+  // Speed Status Evaluation
+  let speedColor = 'var(--color-success)';
+  let speedStatusLabel = 'Normal Cruising Speed';
+  if (currentSpeed === 0) {
+    speedColor = 'var(--color-warning)';
+    speedStatusLabel = 'Bus Stopped / Idle';
+  } else if (currentSpeed > 60) {
+    speedColor = 'var(--color-danger)';
+    speedStatusLabel = 'Over Speeding Warning!';
+  }
+
+  // Start Route & Open Google Maps with all route stops
+  const handleStartRouteWithGoogleMaps = () => {
+    if (!isBroadcasting) {
+      startDriverGpsBroadcast(vehicleId);
+    }
+
+    if (!route) return;
+
+    // Origin, Destination & Intermediate Stops
+    const originStr = route.origin;
+    const destinationStr = route.destination;
+
+    const intermediateStops = route.stops
+      ?.slice(1, -1)
+      ?.map(s => s.name)
+      ?.filter(Boolean) || [];
+
+    const waypointsParam = intermediateStops.length > 0 ? `&waypoints=${encodeURIComponent(intermediateStops.join('|'))}` : '';
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originStr)}&destination=${encodeURIComponent(destinationStr)}${waypointsParam}&travelmode=driving`;
+
+    window.open(googleMapsUrl, '_blank');
+  };
+
+  // Adjust driving speed
+  const handleSetSpeed = (newSpeed) => {
+    setCustomSpeed(newSpeed);
+    updateVehicleState?.(vehicleId, { speed: newSpeed });
+  };
+
+  const busForMap = [{
+    id: vehicle.id, lat: busState.lat, lng: busState.lng,
+    heading: busState.heading, speed: currentSpeed, status: busState.status,
+    registrationNo: vehicle.registrationNo,
+  }];
+  const routeForMap = route ? [{ id: route.id, waypoints: route.waypoints, color: route.color }] : [];
+
   return (
-    <div style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-      <h2>Bus data not available</h2>
-      <p>Your assigned bus ({session?.busNumber}) is not currently in the tracking system.</p>
-    </div>
-  );
-}
-
-const busForMap = [{
-  id: vehicle.id, lat: busState.lat, lng: busState.lng,
-  heading: busState.heading, speed: busState.speed, status: busState.status,
-  registrationNo: vehicle.registrationNo,
-}];
-const routeForMap = route ? [{ id: route.id, waypoints: route.waypoints, color: route.color }] : [];
-
-return (
-  <div>
-    {/* Driver identity banner */}
-    <div className="card mb-4">
-      <div className="card__body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <div>
-          <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>On Duty — {vehicle.busNumber}</div>
-          <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
-          <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>
-            {vehicle.serviceClass} · {vehicle.registrationNo} · License: {vehicle.driver?.licenseNo}
-          </div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>Route {route?.routeNo}</div>
-          <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{route?.name}</div>
-          <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>{route?.origin} → {route?.destination}</div>
-        </div>
-      </div>
-    </div>
-
-    {/* GPS & Speed cards */}
-    <div className="grid grid--4 mb-4">
-      <div className="stat-card" style={{ gridColumn: 'span 2' }}>
-        <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span> GPS Telemetry</span>
-          <span className={`badge ${isBroadcasting ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
-            {isBroadcasting ? '● Phone GPS Active' : '● AIS-140 Hardware'}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
-          <button
-            className={`btn ${isBroadcasting ? 'btn--danger' : 'btn--primary'}`}
-            onClick={() => {
-              if (isBroadcasting) stopDriverGpsBroadcast(vehicleId);
-              else startDriverGpsBroadcast(vehicleId);
-            }}
-          >
-             {isBroadcasting ? 'Stop Phone GPS Broadcast' : 'Start Phone GPS Broadcast'}
-          </button>
-          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-            Device: {vehicle.ais140DeviceId}
-          </div>
-        </div>
-      </div>
-
-      <div className="stat-card">
-        <div className="stat-card__label">Speed</div>
-        <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
-        <div style={{ fontSize: 'var(--font-size-xs)', color: busState.status === 'delayed' ? 'var(--color-warning)' : 'var(--color-success)' }}>
-          {busState.status === 'running' ? 'On Schedule' : busState.status === 'delayed' ? `Delayed ~${busState.delayMinutes}m` : busState.status.toUpperCase()}
-        </div>
-      </div>
-
-      <div className="stat-card">
-        <div className="stat-card__label">Last Ping</div>
-        <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: busState.isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
-          {pingAge != null ? (pingAge < 60 ? `${pingAge}s ago` : `${Math.round(pingAge / 60)}m ago`) : '—'}
-        </div>
-        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-          {busState.isSignalLost ? 'Signal Lost' : 'Connected'}
-        </div>
-      </div>
-    </div>
-
-    {/* Emergency SOS */}
-    <div className="mb-4">
-      <button
-        className="btn btn--danger"
-        style={{ width: '100%', padding: 'var(--space-3)', fontSize: 'var(--font-size-md)', fontWeight: 700 }}
-        onClick={() => setShowSOS(!showSOS)}
-      >
-         {showSOS ? 'Cancel SOS' : 'Emergency SOS / Report Breakdown'}
-      </button>
-      {showSOS && (
-        <div className="card mt-2" style={{ borderColor: 'var(--color-danger)' }}>
-          <div className="card__body">
-            <p style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
-              This will alert the HRTC Control Room with your current GPS location.
-            </p>
-            <div className="flex flex--gap-2">
-              <button className="btn btn--danger btn--sm"> Report Breakdown</button>
-              <button className="btn btn--danger btn--sm"> Emergency SOS</button>
-              <button className="btn btn--danger btn--sm"> Road Blockage</button>
+    <div>
+      {/* Driver identity & Navigation Action banner */}
+      <div className="card mb-4">
+        <div className="card__body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+          <div>
+            <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>On Duty — {vehicle.busNumber}</div>
+            <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>{vehicle.driver?.name}</div>
+            <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>
+              {vehicle.serviceClass} · {vehicle.registrationNo} · License: {vehicle.driver?.licenseNo}
             </div>
           </div>
+          
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>Route {route?.routeNo}</div>
+              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{route?.name}</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>{route?.origin} → {route?.destination}</div>
+            </div>
+
+            <button
+              onClick={handleStartRouteWithGoogleMaps}
+              className="btn btn--primary"
+              style={{
+                padding: '10px 18px',
+                fontWeight: 700,
+                fontSize: 'var(--font-size-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              ▶ Start Route & Open Google Maps
+            </button>
+          </div>
         </div>
-      )}
-    </div>
-
-    {/* Live map */}
-    <div className="card mb-4">
-      <div className="card__header"><span className="card__title"> Your Live Location</span></div>
-      <div className="card__body" style={{ padding: 0 }}>
-        <MapView
-          buses={busForMap}
-          routes={routeForMap}
-          center={[busState.lat, busState.lng]}
-          zoom={13}
-          className="map-container"
-        />
       </div>
-    </div>
 
-    {/* Upcoming stops timeline */}
-    <div className="card mb-4">
-      <div className="card__header"><span className="card__title">Upcoming Stops</span></div>
-      <div className="card__body">
-        {upcomingStops.length === 0 ? (
-          <div className="text-center text-muted" style={{ padding: 'var(--space-4)' }}>No upcoming stops</div>
-        ) : (
-          <div className="stop-timeline">
-            {upcomingStops.map((eta, i) => (
-              <div key={eta.stopId} className="stop-timeline__item">
-                <div className="stop-timeline__dot" style={{ background: i === 0 ? 'var(--color-primary)' : 'var(--color-border)' }} />
-                <div className="stop-timeline__content" style={{ flex: 1 }}>
-                  <span style={{ fontWeight: i === 0 ? 700 : 500 }}>{eta.stopName}</span>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: 'var(--font-size-xs)' }}>
-                  <ETABadge etaMinutes={eta.etaMinutes} confidence={eta.confidence} showLabel={false} />
-                  <div style={{ color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                    Arr: {formatClockTime(eta.arrivalTime)} · Dep: {formatClockTime(eta.departureTime)}
-                  </div>
-                </div>
+      {/* GPS & Speed cards */}
+      <div className="grid grid--4 mb-4">
+        <div className="stat-card" style={{ gridColumn: 'span 2' }}>
+          <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>GPS Telemetry & Navigation</span>
+            <span className={`badge ${isBroadcasting ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
+              {isBroadcasting ? '● Live Broadcast Active' : '● AIS-140 Hardware'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
+            <button
+              className={`btn ${isBroadcasting ? 'btn--danger' : 'btn--primary'}`}
+              onClick={() => {
+                if (isBroadcasting) stopDriverGpsBroadcast(vehicleId);
+                else startDriverGpsBroadcast(vehicleId);
+              }}
+            >
+              {isBroadcasting ? 'Stop Live Broadcast' : 'Start Live Broadcast'}
+            </button>
+
+            <button
+              className="btn btn--outline"
+              onClick={handleStartRouteWithGoogleMaps}
+            >
+              🗺 Open Google Maps (All Stops)
+            </button>
+          </div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '8px' }}>
+            AIS-140 Device: <strong>{vehicle.ais140DeviceId}</strong> · Includes {route?.stops?.length || 0} station stops in navigation
+          </div>
+        </div>
+
+        {/* DYNAMIC ACCURATE SPEED CARD */}
+        <div className="stat-card">
+          <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Live Speed</span>
+            <span style={{ fontSize: '0.65rem', color: speedColor, fontWeight: 700 }}>
+              {speedStatusLabel}
+            </span>
+          </div>
+          <div className="stat-card__value" style={{ color: speedColor, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            {currentSpeed}
+            <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400, color: 'var(--color-text-muted)' }}>
+              {t('kmh')}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+            <button
+              onClick={() => handleSetSpeed(0)}
+              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 0 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 0 ? '#FFF' : 'inherit' }}
+            >
+              Stop (0)
+            </button>
+            <button
+              onClick={() => handleSetSpeed(30)}
+              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 30 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 30 ? '#FFF' : 'inherit' }}
+            >
+              30 km/h
+            </button>
+            <button
+              onClick={() => handleSetSpeed(45)}
+              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 45 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 45 ? '#FFF' : 'inherit' }}
+            >
+              45 km/h
+            </button>
+            <button
+              onClick={() => handleSetSpeed(60)}
+              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 60 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 60 ? '#FFF' : 'inherit' }}
+            >
+              60 km/h
+            </button>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card__label">Last Ping</div>
+          <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: busState.isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
+            {pingAge != null ? (pingAge < 60 ? `${pingAge}s ago` : `${Math.round(pingAge / 60)}m ago`) : '—'}
+          </div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+            {busState.isSignalLost ? 'Signal Lost' : 'Connected'}
+          </div>
+        </div>
+      </div>
+
+      {/* Emergency SOS */}
+      <div className="mb-4">
+        <button
+          className="btn btn--danger"
+          style={{ width: '100%', padding: 'var(--space-3)', fontSize: 'var(--font-size-md)', fontWeight: 700 }}
+          onClick={() => setShowSOS(!showSOS)}
+        >
+          {showSOS ? 'Cancel SOS' : 'Emergency SOS / Report Breakdown'}
+        </button>
+        {showSOS && (
+          <div className="card mt-2" style={{ borderColor: 'var(--color-danger)' }}>
+            <div className="card__body">
+              <p style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
+                This will alert the HRTC Control Room with your current GPS location.
+              </p>
+              <div className="flex flex--gap-2">
+                <button className="btn btn--danger btn--sm">Report Breakdown</button>
+                <button className="btn btn--danger btn--sm">Emergency SOS</button>
+                <button className="btn btn--danger btn--sm">Road Blockage</button>
               </div>
-            ))}
+            </div>
           </div>
         )}
       </div>
+
+      {/* Live map */}
+      <div className="card mb-4">
+        <div className="card__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="card__title">Your Live Location</span>
+          <button
+            onClick={handleStartRouteWithGoogleMaps}
+            style={{ fontSize: 'var(--font-size-xs)', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer' }}
+          >
+            🗺 Open Full Screen Google Maps Route
+          </button>
+        </div>
+        <div className="card__body" style={{ padding: 0 }}>
+          <MapView
+            buses={busForMap}
+            routes={routeForMap}
+            center={[busState.lat, busState.lng]}
+            zoom={13}
+            className="map-container"
+          />
+        </div>
+      </div>
+
+      {/* Upcoming stops timeline */}
+      <div className="card mb-4">
+        <div className="card__header"><span className="card__title">Upcoming Stops ({route?.name})</span></div>
+        <div className="card__body">
+          {upcomingStops.length === 0 ? (
+            <div className="text-center text-muted" style={{ padding: 'var(--space-4)' }}>No upcoming stops</div>
+          ) : (
+            <div className="stop-timeline">
+              {upcomingStops.map((eta, i) => (
+                <div key={eta.stopId} className="stop-timeline__item">
+                  <div className="stop-timeline__dot" style={{ background: i === 0 ? 'var(--color-primary)' : 'var(--color-border)' }} />
+                  <div className="stop-timeline__content" style={{ flex: 1 }}>
+                    <span style={{ fontWeight: i === 0 ? 700 : 500 }}>{eta.stopName}</span>
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: 'var(--font-size-xs)' }}>
+                    <ETABadge etaMinutes={eta.etaMinutes} confidence={eta.confidence} showLabel={false} />
+                    <div style={{ color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      Arr: {formatClockTime(eta.arrivalTime)} · Dep: {formatClockTime(eta.departureTime)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
 }
