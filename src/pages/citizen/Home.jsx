@@ -14,6 +14,8 @@ export default function Home() {
   const navigate = useNavigate();
 
   const todayStr = new Date().toISOString().split('T')[0];
+  const [searchTab, setSearchTab] = useState('station'); // 'station' | 'universal'
+  const [searchQuery, setSearchQuery] = useState('');
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [journeyDate, setJourneyDate] = useState(todayStr);
@@ -43,8 +45,50 @@ export default function Home() {
     setHasSearched(true);
   };
 
-  // Filter available buses based on journey selection
+  // Filter available buses based on journey selection or universal search
   const availableBuses = useMemo(() => {
+    if (searchTab === 'universal') {
+      const q = searchQuery.toLowerCase().trim();
+      if (!q && !hasSearched) return [];
+
+      const cleanDigits = q.replace(/\D/g, '');
+
+      return VEHICLES.filter(vehicle => {
+        if (!q) return true;
+        const route = ROUTES.find(r => r.id === vehicle.routeId);
+
+        // Bus Number & Registration Number
+        const busNoMatch = vehicle.busNumber.toLowerCase().includes(q) || vehicle.registrationNo.toLowerCase().includes(q);
+
+        // Driver Name & Phone
+        const driverNameMatch = vehicle.driver?.name?.toLowerCase().includes(q);
+        const driverPhoneClean = vehicle.driver?.phone ? vehicle.driver.phone.replace(/\D/g, '') : '';
+        const driverPhoneMatch = cleanDigits && cleanDigits.length >= 3 && driverPhoneClean.includes(cleanDigits);
+
+        // Conductor Name & Phone
+        const conductorNameMatch = vehicle.driver?.conductor?.name?.toLowerCase().includes(q);
+        const conductorPhoneClean = vehicle.driver?.conductor?.phone ? vehicle.driver.conductor.phone.replace(/\D/g, '') : '';
+        const conductorPhoneMatch = cleanDigits && cleanDigits.length >= 3 && conductorPhoneClean.includes(cleanDigits);
+
+        // Route Name, Origin, Destination, Stops
+        const routeMatch = route ? (
+          route.name.toLowerCase().includes(q) ||
+          route.origin.toLowerCase().includes(q) ||
+          route.destination.toLowerCase().includes(q) ||
+          route.stops.some(s => s.name.toLowerCase().includes(q))
+        ) : false;
+
+        // Service Class / Model
+        const serviceMatch = vehicle.serviceClass?.toLowerCase().includes(q) || vehicle.model?.toLowerCase().includes(q);
+
+        return busNoMatch || driverNameMatch || driverPhoneMatch || conductorNameMatch || conductorPhoneMatch || routeMatch || serviceMatch;
+      }).map(vehicle => {
+        const route = ROUTES.find(r => r.id === vehicle.routeId);
+        const busState = busStates[vehicle.id];
+        return { vehicle, route, busState };
+      });
+    }
+
     if (!hasSearched) return [];
 
     return VEHICLES.filter(vehicle => {
@@ -63,7 +107,7 @@ export default function Home() {
       const busState = busStates[vehicle.id];
       return { vehicle, route, busState };
     });
-  }, [fromLocation, toLocation, journeyDate, hasSearched, busStates]);
+  }, [searchTab, searchQuery, fromLocation, toLocation, journeyDate, hasSearched, busStates]);
 
   // Active buses count per route
   const activeBusesByRoute = useMemo(() => {
@@ -104,76 +148,176 @@ export default function Home() {
         <h1 className="page-title" style={{ fontSize: 'var(--font-size-2xl)', marginBottom: 'var(--space-2)' }}>
           {t('tagline')}
         </h1>
-        <p className="text-muted" style={{ maxWidth: '540px', margin: '0 auto var(--space-6)' }}>
-          Select your departure, arrival, and journey date to check HRTC bus availability and live tracking.
+        <p className="text-muted" style={{ maxWidth: '560px', margin: '0 auto var(--space-6)' }}>
+          Search HRTC buses by stations, bus numbers, driver names, phone numbers, conductors, or routes.
         </p>
 
-        {/* Journey Search Widget */}
+        {/* Journey & Universal Search Widget */}
         <div className="journey-search-box">
-          <form onSubmit={handleSearchSubmit}>
-            <div className="journey-search-grid">
-              
-              {/* FROM Location */}
-              <div className="journey-field">
-                <label htmlFor="from-location">From (Origin)</label>
-                <select
-                  id="from-location"
-                  value={fromLocation}
-                  onChange={(e) => setFromLocation(e.target.value)}
+          {/* Tab Switcher */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: 'var(--space-5)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-3)', justifyContent: 'center' }}>
+            <button
+              type="button"
+              className={`btn btn--sm ${searchTab === 'station' ? 'btn--primary' : 'btn--outline'}`}
+              onClick={() => { setSearchTab('station'); setHasSearched(false); }}
+              style={{ borderRadius: 'var(--radius-full)', fontWeight: 600 }}
+            >
+              Station to Station
+            </button>
+            <button
+              type="button"
+              className={`btn btn--sm ${searchTab === 'universal' ? 'btn--primary' : 'btn--outline'}`}
+              onClick={() => { setSearchTab('universal'); setHasSearched(true); }}
+              style={{ borderRadius: 'var(--radius-full)', fontWeight: 600 }}
+            >
+              Search Bus / Driver / Phone / Route
+            </button>
+          </div>
+
+          {searchTab === 'station' ? (
+            <form onSubmit={handleSearchSubmit}>
+              <div className="journey-search-grid">
+                
+                {/* FROM Location */}
+                <div className="journey-field">
+                  <label htmlFor="from-location">From (Origin)</label>
+                  <select
+                    id="from-location"
+                    value={fromLocation}
+                    onChange={(e) => setFromLocation(e.target.value)}
+                  >
+                    <option value="">-- Select Origin Station --</option>
+                    {locationOptions.map(loc => (
+                      <option key={`from-${loc}`} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Swap Button */}
+                <button
+                  type="button"
+                  className="journey-swap-btn"
+                  onClick={handleSwap}
+                  title="Swap Origin and Destination"
+                  aria-label="Swap"
                 >
-                  <option value="">-- Select Origin Station --</option>
-                  {locationOptions.map(loc => (
-                    <option key={`from-${loc}`} value={loc}>{loc}</option>
-                  ))}
-                </select>
+                  ⇄
+                </button>
+
+                {/* TO Location */}
+                <div className="journey-field">
+                  <label htmlFor="to-location">To (Destination)</label>
+                  <select
+                    id="to-location"
+                    value={toLocation}
+                    onChange={(e) => setToLocation(e.target.value)}
+                  >
+                    <option value="">-- Select Destination --</option>
+                    {locationOptions.map(loc => (
+                      <option key={`to-${loc}`} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* CALENDAR DATE PICKER */}
+                <div className="journey-field">
+                  <label htmlFor="journey-date">Date of Journey</label>
+                  <input
+                    type="date"
+                    id="journey-date"
+                    value={journeyDate}
+                    min={todayStr}
+                    onChange={(e) => setJourneyDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* SEARCH BUTTON */}
+                <button type="submit" className="journey-search-btn">
+                  Search Buses
+                </button>
+
               </div>
-
-              {/* Swap Button */}
-              <button
-                type="button"
-                className="journey-swap-btn"
-                onClick={handleSwap}
-                title="Swap Origin and Destination"
-                aria-label="Swap"
-              >
-                ⇄
-              </button>
-
-              {/* TO Location */}
+            </form>
+          ) : (
+            <form onSubmit={(e) => { e.preventDefault(); setHasSearched(true); }}>
               <div className="journey-field">
-                <label htmlFor="to-location">To (Destination)</label>
-                <select
-                  id="to-location"
-                  value={toLocation}
-                  onChange={(e) => setToLocation(e.target.value)}
-                >
-                  <option value="">-- Select Destination --</option>
-                  {locationOptions.map(loc => (
-                    <option key={`to-${loc}`} value={loc}>{loc}</option>
-                  ))}
-                </select>
+                <label htmlFor="universal-search" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Search by Bus #, Driver Name, Driver Phone, Conductor, or Route
+                </label>
+                <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    id="universal-search"
+                    value={searchQuery}
+                    placeholder="Type e.g. '101', 'Prem Chand', '98160', 'Dhani Ram', 'Shimla', 'Kufri'..."
+                    onChange={(e) => { setSearchQuery(e.target.value); setHasSearched(true); }}
+                    style={{
+                      height: '46px',
+                      paddingLeft: '38px',
+                      fontSize: 'var(--font-size-sm)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1.5px solid var(--color-border)',
+                      width: '100%',
+                    }}
+                    autoFocus
+                  />
+                  <span style={{ position: 'absolute', left: '12px', fontSize: '1.1rem', pointerEvents: 'none', opacity: 0.6 }}>
+                    🔍
+                  </span>
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        color: 'var(--color-text-muted)',
+                      }}
+                      title="Clear Search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* CALENDAR DATE PICKER */}
-              <div className="journey-field">
-                <label htmlFor="journey-date">Date of Journey</label>
-                <input
-                  type="date"
-                  id="journey-date"
-                  value={journeyDate}
-                  min={todayStr}
-                  onChange={(e) => setJourneyDate(e.target.value)}
-                  required
-                />
+              {/* Quick Search Suggestions */}
+              <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>Try Searching:</span>
+                {[
+                  { label: 'Bus #101', value: '101' },
+                  { label: '👨‍✈️ Prem Chand (Driver)', value: 'Prem Chand' },
+                  { label: '📞 98160-12341 (Phone)', value: '98160' },
+                  { label: '🎫 Dhani Ram (Conductor)', value: 'Dhani Ram' },
+                  { label: '🚌 Shimla Local', value: 'Shimla' },
+                  { label: '⛰️ Kufri Route', value: 'Kufri' },
+                ].map((chip) => (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    onClick={() => { setSearchQuery(chip.value); setHasSearched(true); }}
+                    style={{
+                      background: 'var(--color-background-alt)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-full)',
+                      padding: '3px 10px',
+                      fontSize: 'var(--font-size-xs)',
+                      cursor: 'pointer',
+                      color: 'var(--color-text)',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
               </div>
-
-              {/* SEARCH BUTTON */}
-              <button type="submit" className="journey-search-btn">
-                Search Buses
-              </button>
-
-            </div>
-          </form>
+            </form>
+          )}
         </div>
       </div>
 
@@ -182,19 +326,25 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex flex--between flex--align-center mb-4">
             <h2 className="section-title" style={{ margin: 0 }}>
-              Available HRTC Buses ({availableBuses.length})
+              {searchTab === 'universal'
+                ? searchQuery ? `Search Results for "${searchQuery}" (${availableBuses.length})` : `All Active HRTC Buses (${availableBuses.length})`
+                : `Available HRTC Buses (${availableBuses.length})`}
             </h2>
-            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
-              Journey Date: <strong>{new Date(journeyDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</strong>
-            </span>
+            {searchTab === 'station' && (
+              <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                Journey Date: <strong>{new Date(journeyDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+              </span>
+            )}
           </div>
 
           {availableBuses.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-2)' }}>🚌</div>
-              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>No Direct HRTC Buses Found</h3>
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>No HRTC Buses Found</h3>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
-                No active buses found running directly between <strong>{fromLocation || 'selected origin'}</strong> and <strong>{toLocation || 'selected destination'}</strong> on {journeyDate}. Try selecting another route station or date.
+                {searchTab === 'universal'
+                  ? `No buses found matching "${searchQuery}". Try searching by driver name (e.g., Prem Chand), driver phone (e.g., 98160), bus number (e.g., 101), or route.`
+                  : `No active buses found running directly between ${fromLocation || 'selected origin'} and ${toLocation || 'selected destination'} on ${journeyDate}. Try selecting another route station or date.`}
               </p>
             </div>
           ) : (
