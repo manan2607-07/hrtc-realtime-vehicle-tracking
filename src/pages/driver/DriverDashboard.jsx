@@ -112,7 +112,7 @@ export default function DriverDashboard() {
           <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>GPS Telemetry & Navigation</span>
             <span className={`badge ${isBroadcasting ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
-              {isBroadcasting ? '● Live Broadcast Active' : '● AIS-140 Hardware'}
+              {isBroadcasting ? '● Live Broadcast Active' : '● Live GPS Tracking'}
             </span>
           </div>
           
@@ -142,10 +142,6 @@ export default function DriverDashboard() {
               </button>
             )}
           </div>
-          
-          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '8px' }}>
-            AIS-140 Device: <strong>{vehicle.ais140DeviceId}</strong> · Includes {route?.stops?.length || 0} station stops in navigation
-          </div>
         </div>
 
         {/* GPS TRACKED SPEED CARD (READ ONLY) */}
@@ -161,9 +157,6 @@ export default function DriverDashboard() {
             <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400, color: 'var(--color-text-muted)' }}>
               {t('kmh')}
             </span>
-          </div>
-          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-            Auto-tracked via AIS-140 / Device GPS
           </div>
         </div>
 
