@@ -45,14 +45,13 @@ export default function AdminLogin() {
       <div className="login-page__form-container" style={{ display: 'block', maxWidth: '440px', margin: '0 auto' }}>
         <div className="login-form" style={{ '--role-color': '#B22234' }}>
           <div className="login-form__header">
-            <span className="login-form__icon" style={{ fontSize: '2rem' }}>🏛️</span>
             <h2 className="login-form__title" style={{ marginTop: '8px' }}>Admin Credential Verification</h2>
             <p className="login-form__desc">Enter your administrative username and secure passcode</p>
           </div>
 
           {error && (
             <div className="login-form__error">
-              <span>⚠️</span> {error}
+              {error}
             </div>
           )}
 

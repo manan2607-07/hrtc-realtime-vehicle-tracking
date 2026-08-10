@@ -172,11 +172,9 @@ return (
           {t('navReports')}
         </NavLink>
         <NavLink to="/admin/alerts" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">🚨</span>
           {t('navAlerts')}
         </NavLink>
         <NavLink to="/admin/staff" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">👨‍✈️</span>
           Staff Directory & Locations
         </NavLink>
       </aside>

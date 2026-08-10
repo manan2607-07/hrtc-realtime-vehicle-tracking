@@ -49,14 +49,14 @@ export default function StaffLogin() {
   const staffRoles = [
     {
       id: 'driver',
-      icon: '👨‍✈️',
+      icon: '',
       title: 'HRTC Driver',
       subtitle: 'Access your assigned bus, GPS broadcast & trip status',
       color: '#2E86C1',
     },
     {
       id: 'conductor',
-      icon: '🎫',
+      icon: '',
       title: 'HRTC Conductor',
       subtitle: 'Manage tickets, passenger count & trip log',
       color: '#148F77',
@@ -84,7 +84,7 @@ export default function StaffLogin() {
                 setEmpId('');
               }}
             >
-              <div className="role-card__icon">{card.icon}</div>
+              {card.icon && <div className="role-card__icon">{card.icon}</div>}
               <div className="role-card__title">{card.title}</div>
               <div className="role-card__subtitle">{card.subtitle}</div>
               <div className="role-card__action">Secure Login →</div>
@@ -99,14 +99,13 @@ export default function StaffLogin() {
 
           <div className="login-form" style={{ '--role-color': staffRoles.find(r => r.id === activeTab)?.color }}>
             <div className="login-form__header">
-              <span className="login-form__icon">{staffRoles.find(r => r.id === activeTab)?.icon}</span>
               <h2 className="login-form__title">{staffRoles.find(r => r.id === activeTab)?.title} Login</h2>
               <p className="login-form__desc">Credentials are verified against the HRTC Staff Database</p>
             </div>
 
             {error && (
               <div className="login-form__error">
-                <span>⚠️</span> {error}
+                {error}
               </div>
             )}
 
@@ -167,7 +166,7 @@ export default function StaffLogin() {
             textDecoration: 'underline',
           }}
         >
-          🔐 Are you an HRTC Officer / Admin? Switch to Admin Portal →
+          Are you an HRTC Officer / Admin? Switch to Admin Portal →
         </button>
       </div>
 
