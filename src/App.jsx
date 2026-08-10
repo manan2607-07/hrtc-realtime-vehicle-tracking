@@ -9,6 +9,7 @@ import ToastContainer from './components/ToastContainer';
 // Login
 import RoleLogin from './pages/RoleLogin';
 import StaffLogin from './pages/StaffLogin';
+import AdminLogin from './pages/AdminLogin';
 
 // Citizen pages
 import Home from './pages/citizen/Home';
@@ -273,8 +274,11 @@ export default function App() {
           <Routes>
             {/* Public passenger entry */}
             <Route path="/login" element={<RoleLogin />} />
-            {/* Staff-only login — not linked from passenger page */}
+            {/* Staff-only login — Driver & Conductor */}
             <Route path="/staff" element={<StaffLogin />} />
+            {/* Dedicated Admin Portal — HRTC Officers & Admins */}
+            <Route path="/admin-portal" element={<AdminLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* Customer routes — restricted to 'customer' role */}
             <Route element={<RequireRole allowedRoles={['customer']} />}>
