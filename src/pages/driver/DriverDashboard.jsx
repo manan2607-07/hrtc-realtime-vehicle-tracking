@@ -10,10 +10,9 @@ import ETABadge from '../../components/ETABadge';
 
 export default function DriverDashboard() {
   const { session } = useAuth();
-  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast, updateVehicleState } = useSimulation();
+  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast } = useSimulation();
   const { t } = useLanguage();
   const [showSOS, setShowSOS] = useState(false);
-  const [customSpeed, setCustomSpeed] = useState(null);
 
   const vehicleId = session?.vehicleId;
   const vehicle = VEHICLES.find(v => v.id === vehicleId);
@@ -39,12 +38,9 @@ export default function DriverDashboard() {
     );
   }
 
-  // Calculate live accurate speed
+  // Calculate live accurate GPS-tracked speed
   const baseSpeed = busState?.speed || 0;
-  const activeSpeed = customSpeed !== null 
-    ? customSpeed 
-    : (baseSpeed > 0 ? baseSpeed : (isBroadcasting || busState?.status === 'running' ? 36 : 0));
-  const currentSpeed = Math.round(activeSpeed);
+  const currentSpeed = Math.round(baseSpeed > 0 ? baseSpeed : (isBroadcasting || busState?.status === 'running' ? 36 : 0));
 
   // Speed Status Evaluation
   let speedColor = 'var(--color-success)';
@@ -57,8 +53,8 @@ export default function DriverDashboard() {
     speedStatusLabel = 'Over Speeding Warning!';
   }
 
-  // Start Route & Open Google Maps with all route stops
-  const handleStartRouteWithGoogleMaps = () => {
+  // Start Route & Open Google Maps with all route stops included
+  const handleStartRoute = () => {
     if (!isBroadcasting) {
       startDriverGpsBroadcast(vehicleId);
     }
@@ -80,12 +76,6 @@ export default function DriverDashboard() {
     window.open(googleMapsUrl, '_blank');
   };
 
-  // Adjust driving speed
-  const handleSetSpeed = (newSpeed) => {
-    setCustomSpeed(newSpeed);
-    updateVehicleState?.(vehicleId, { speed: newSpeed });
-  };
-
   const busForMap = [{
     id: vehicle.id, lat: busState.lat, lng: busState.lng,
     heading: busState.heading, speed: currentSpeed, status: busState.status,
@@ -95,7 +85,7 @@ export default function DriverDashboard() {
 
   return (
     <div>
-      {/* Driver identity & Navigation Action banner */}
+      {/* Driver identity banner */}
       <div className="card mb-4">
         <div className="card__body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <div>
@@ -106,15 +96,29 @@ export default function DriverDashboard() {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>Route {route?.routeNo}</div>
-              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{route?.name}</div>
-              <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>{route?.origin} → {route?.destination}</div>
-            </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>Route {route?.routeNo}</div>
+            <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{route?.name}</div>
+            <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>{route?.origin} → {route?.destination}</div>
+          </div>
+        </div>
+      </div>
 
+      {/* GPS Telemetry & Live Speed cards */}
+      <div className="grid grid--4 mb-4">
+        
+        {/* GPS TELEMETRY & START ROUTE CARD */}
+        <div className="stat-card" style={{ gridColumn: 'span 2' }}>
+          <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>GPS Telemetry & Navigation</span>
+            <span className={`badge ${isBroadcasting ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
+              {isBroadcasting ? '● Live Broadcast Active' : '● AIS-140 Hardware'}
+            </span>
+          </div>
+          
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
             <button
-              onClick={handleStartRouteWithGoogleMaps}
+              onClick={handleStartRoute}
               className="btn btn--primary"
               style={{
                 padding: '10px 18px',
@@ -128,46 +132,26 @@ export default function DriverDashboard() {
             >
               ▶ Start Route & Open Google Maps
             </button>
-          </div>
-        </div>
-      </div>
 
-      {/* GPS & Speed cards */}
-      <div className="grid grid--4 mb-4">
-        <div className="stat-card" style={{ gridColumn: 'span 2' }}>
-          <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>GPS Telemetry & Navigation</span>
-            <span className={`badge ${isBroadcasting ? 'badge--live' : 'badge--running'}`} style={{ fontSize: '0.65rem' }}>
-              {isBroadcasting ? '● Live Broadcast Active' : '● AIS-140 Hardware'}
-            </span>
+            {isBroadcasting && (
+              <button
+                className="btn btn--danger btn--sm"
+                onClick={() => stopDriverGpsBroadcast(vehicleId)}
+              >
+                Stop Broadcast
+              </button>
+            )}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
-            <button
-              className={`btn ${isBroadcasting ? 'btn--danger' : 'btn--primary'}`}
-              onClick={() => {
-                if (isBroadcasting) stopDriverGpsBroadcast(vehicleId);
-                else startDriverGpsBroadcast(vehicleId);
-              }}
-            >
-              {isBroadcasting ? 'Stop Live Broadcast' : 'Start Live Broadcast'}
-            </button>
-
-            <button
-              className="btn btn--outline"
-              onClick={handleStartRouteWithGoogleMaps}
-            >
-              🗺 Open Google Maps (All Stops)
-            </button>
-          </div>
+          
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '8px' }}>
             AIS-140 Device: <strong>{vehicle.ais140DeviceId}</strong> · Includes {route?.stops?.length || 0} station stops in navigation
           </div>
         </div>
 
-        {/* DYNAMIC ACCURATE SPEED CARD */}
+        {/* GPS TRACKED SPEED CARD (READ ONLY) */}
         <div className="stat-card">
           <div className="stat-card__label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Live Speed</span>
+            <span>GPS Tracked Speed</span>
             <span style={{ fontSize: '0.65rem', color: speedColor, fontWeight: 700 }}>
               {speedStatusLabel}
             </span>
@@ -178,34 +162,12 @@ export default function DriverDashboard() {
               {t('kmh')}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-            <button
-              onClick={() => handleSetSpeed(0)}
-              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 0 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 0 ? '#FFF' : 'inherit' }}
-            >
-              Stop (0)
-            </button>
-            <button
-              onClick={() => handleSetSpeed(30)}
-              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 30 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 30 ? '#FFF' : 'inherit' }}
-            >
-              30 km/h
-            </button>
-            <button
-              onClick={() => handleSetSpeed(45)}
-              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 45 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 45 ? '#FFF' : 'inherit' }}
-            >
-              45 km/h
-            </button>
-            <button
-              onClick={() => handleSetSpeed(60)}
-              style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '3px', border: '1px solid var(--color-border)', cursor: 'pointer', background: currentSpeed === 60 ? 'var(--color-primary)' : 'transparent', color: currentSpeed === 60 ? '#FFF' : 'inherit' }}
-            >
-              60 km/h
-            </button>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+            Auto-tracked via AIS-140 / Device GPS
           </div>
         </div>
 
+        {/* LAST PING CARD */}
         <div className="stat-card">
           <div className="stat-card__label">Last Ping</div>
           <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: busState.isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
@@ -247,10 +209,10 @@ export default function DriverDashboard() {
         <div className="card__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="card__title">Your Live Location</span>
           <button
-            onClick={handleStartRouteWithGoogleMaps}
-            style={{ fontSize: 'var(--font-size-xs)', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer' }}
+            onClick={handleStartRoute}
+            style={{ fontSize: 'var(--font-size-xs)', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'cursor' }}
           >
-            🗺 Open Full Screen Google Maps Route
+            🗺 Open Google Maps Route (All Stops)
           </button>
         </div>
         <div className="card__body" style={{ padding: 0 }}>
