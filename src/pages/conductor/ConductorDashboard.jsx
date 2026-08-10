@@ -85,6 +85,22 @@ export default function ConductorDashboard() {
 
   const passengerCount = occupiedSeatsList.length;
 
+  // Get all HRTC station stops across all routes for destination dropdown
+  const allNetworkStops = useMemo(() => {
+    const routeStopNames = new Set(route?.stops?.map(s => s.name) || []);
+    const set = new Set();
+    ROUTES.forEach(r => {
+      set.add(r.origin);
+      set.add(r.destination);
+      r.stops.forEach(s => set.add(s.name));
+    });
+    const all = Array.from(set).sort();
+    return {
+      currentRouteStops: route?.stops?.map(s => s.name) || [],
+      otherNetworkStops: all.filter(s => !routeStopNames.has(s)),
+    };
+  }, [route]);
+
   // Available seats list
   const availableSeatNumbers = useMemo(() => {
     const available = [];
@@ -116,7 +132,7 @@ export default function ConductorDashboard() {
 
     const tktNo = `TKT-${1000 + ticketsSold + 1}`;
     const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    const targetDest = destinationStop || route?.destination || 'Next Station';
+    const targetDest = destinationStop || allNetworkStops.currentRouteStops[0] || route?.destination || 'Next Station';
     const amount = Number(fareAmount) || 30;
 
     // Update Seat
@@ -257,11 +273,11 @@ export default function ConductorDashboard() {
         </div>
         <div className="card__body">
           <form onSubmit={handleIssueTicket}>
-            <div className="grid grid--4 gap-4 mb-3">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)', alignItems: 'flex-end' }}>
               
               {/* PASSENGER NAME */}
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '6px' }}>
                   Passenger Name
                 </label>
                 <input
@@ -271,9 +287,10 @@ export default function ConductorDashboard() {
                   onChange={e => setPassengerName(e.target.value)}
                   style={{
                     width: '100%',
+                    height: '42px',
                     padding: '8px 12px',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
+                    border: '1.5px solid var(--color-border)',
                     fontSize: 'var(--font-size-sm)',
                   }}
                   required
@@ -282,7 +299,7 @@ export default function ConductorDashboard() {
 
               {/* SEAT ALLOTMENT */}
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '6px' }}>
                   Seat Allotment
                 </label>
                 <select
@@ -290,9 +307,10 @@ export default function ConductorDashboard() {
                   onChange={e => setSelectedSeatNo(e.target.value)}
                   style={{
                     width: '100%',
+                    height: '42px',
                     padding: '8px 12px',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
+                    border: '1.5px solid var(--color-border)',
                     fontSize: 'var(--font-size-sm)',
                   }}
                 >
@@ -307,31 +325,41 @@ export default function ConductorDashboard() {
 
               {/* DESTINATION STOP */}
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '4px' }}>
-                  Destination Stop
+                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '6px' }}>
+                  Destination Stop (All Stations)
                 </label>
                 <select
                   value={destinationStop}
                   onChange={e => setDestinationStop(e.target.value)}
                   style={{
                     width: '100%',
+                    height: '42px',
                     padding: '8px 12px',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
+                    border: '1.5px solid var(--color-border)',
                     fontSize: 'var(--font-size-sm)',
                   }}
                 >
-                  {route?.stops?.map(stop => (
-                    <option key={stop.id} value={stop.name}>
-                      {stop.name}
-                    </option>
-                  ))}
+                  <optgroup label={`Route ${route?.routeNo || ''} Stops (${route?.name || 'Current Route'})`}>
+                    {allNetworkStops.currentRouteStops.map(stopName => (
+                      <option key={`current-${stopName}`} value={stopName}>
+                        {stopName}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Other HRTC Network Stations">
+                    {allNetworkStops.otherNetworkStops.map(stopName => (
+                      <option key={`other-${stopName}`} value={stopName}>
+                        {stopName}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
               {/* FARE AMOUNT */}
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: 'var(--font-size-xs)', fontWeight: 700, marginBottom: '6px' }}>
                   Ticket Fare (₹)
                 </label>
                 <select
@@ -339,9 +367,10 @@ export default function ConductorDashboard() {
                   onChange={e => setFareAmount(Number(e.target.value))}
                   style={{
                     width: '100%',
+                    height: '42px',
                     padding: '8px 12px',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
+                    border: '1.5px solid var(--color-border)',
                     fontSize: 'var(--font-size-sm)',
                   }}
                 >
@@ -354,17 +383,27 @@ export default function ConductorDashboard() {
                 </select>
               </div>
 
-            </div>
+              {/* SUBMIT BUTTON */}
+              <div>
+                <button
+                  type="submit"
+                  className="btn btn--primary"
+                  disabled={availableSeatNumbers.length === 0}
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    fontWeight: 700,
+                    fontSize: 'var(--font-size-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  + Issue Ticket & Allot Seat
+                </button>
+              </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                type="submit"
-                className="btn btn--primary"
-                disabled={availableSeatNumbers.length === 0}
-                style={{ fontWeight: 700, padding: '10px 24px' }}
-              >
-                + Issue Ticket & Allot Seat
-              </button>
             </div>
           </form>
         </div>
