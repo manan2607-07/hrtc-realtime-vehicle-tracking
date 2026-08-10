@@ -59,7 +59,7 @@ export default function ConductorDashboard() {
   const [passengerName, setPassengerName] = useState('');
   const [selectedSeatNo, setSelectedSeatNo] = useState('');
   const [destinationStop, setDestinationStop] = useState('');
-  const [fareAmount, setFareAmount] = useState(30);
+  const [fareAmount, setFareAmount] = useState('');
 
   // Financial & Stats
   const [ticketsSold, setTicketsSold] = useState(3);
@@ -122,6 +122,16 @@ export default function ConductorDashboard() {
   // Issue Ticket & Allot Seat
   const handleIssueTicket = (e) => {
     e.preventDefault();
+
+    if (!destinationStop) {
+      alert('Please select a Destination Stop before issuing a ticket!');
+      return;
+    }
+    if (!fareAmount) {
+      alert('Please select a Ticket Fare Amount before issuing a ticket!');
+      return;
+    }
+
     const nameToAssign = passengerName.trim() || `Passenger ${ticketsSold + 1}`;
     const targetSeat = selectedSeatNo ? Number(selectedSeatNo) : availableSeatNumbers[0];
 
@@ -132,8 +142,8 @@ export default function ConductorDashboard() {
 
     const tktNo = `TKT-${1000 + ticketsSold + 1}`;
     const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    const targetDest = destinationStop || allNetworkStops.currentRouteStops[0] || route?.destination || 'Next Station';
-    const amount = Number(fareAmount) || 30;
+    const targetDest = destinationStop;
+    const amount = Number(fareAmount);
 
     // Update Seat
     setSeats(prev => ({
@@ -172,6 +182,8 @@ export default function ConductorDashboard() {
     // Reset Form
     setPassengerName('');
     setSelectedSeatNo('');
+    setDestinationStop('');
+    setFareAmount('');
   };
 
   // Depart / Vacate Passenger from Seat
@@ -331,6 +343,7 @@ export default function ConductorDashboard() {
                 <select
                   value={destinationStop}
                   onChange={e => setDestinationStop(e.target.value)}
+                  required
                   style={{
                     width: '100%',
                     height: '42px',
@@ -340,6 +353,7 @@ export default function ConductorDashboard() {
                     fontSize: 'var(--font-size-sm)',
                   }}
                 >
+                  <option value="" disabled>Select Destination Stop</option>
                   <optgroup label={`Route ${route?.routeNo || ''} Stops (${route?.name || 'Current Route'})`}>
                     {allNetworkStops.currentRouteStops.map(stopName => (
                       <option key={`current-${stopName}`} value={stopName}>
@@ -364,7 +378,8 @@ export default function ConductorDashboard() {
                 </label>
                 <select
                   value={fareAmount}
-                  onChange={e => setFareAmount(Number(e.target.value))}
+                  onChange={e => setFareAmount(e.target.value)}
+                  required
                   style={{
                     width: '100%',
                     height: '42px',
@@ -374,6 +389,7 @@ export default function ConductorDashboard() {
                     fontSize: 'var(--font-size-sm)',
                   }}
                 >
+                  <option value="" disabled>Select Ticket Fare</option>
                   <option value={15}>₹15 (Local Stop)</option>
                   <option value={30}>₹30 (Suburban)</option>
                   <option value={50}>₹50 (Standard Hill)</option>
