@@ -142,10 +142,30 @@ export default function ConductorDashboard() {
   ]);
 
   const upcomingStops = useMemo(() => {
-    return busState?.etas?.slice(0, 4) || [];
+    return busState?.etas?.slice(0, 10) || [];
   }, [busState?.etas]);
 
   const currentStopName = upcomingStops[0]?.stopName || route?.origin || 'En Route';
+
+  // Find sequence number of current next stop to determine crossed/passed stops
+  const currentNextStopSeq = useMemo(() => {
+    if (!route || !upcomingStops[0]) return 1;
+    const found = route.stops?.find(s => s.name === upcomingStops[0].stopName || s.id === upcomingStops[0].stopId);
+    return found ? found.seqNo : 1;
+  }, [route, upcomingStops]);
+
+  // Map of passed stop names for fast lookup
+  const passedStopsSet = useMemo(() => {
+    const passed = new Set();
+    if (route && route.stops && currentNextStopSeq > 1) {
+      route.stops.forEach(s => {
+        if (s.seqNo < currentNextStopSeq) {
+          passed.add(s.name);
+        }
+      });
+    }
+    return passed;
+  }, [route, currentNextStopSeq]);
 
   // Handle Destination change & auto calculate fare
   const handleDestinationChange = (selectedDest) => {
@@ -209,6 +229,10 @@ export default function ConductorDashboard() {
 
     if (!destinationStop) {
       alert('Please select a Destination Stop before issuing a ticket!');
+      return;
+    }
+    if (passedStopsSet.has(destinationStop)) {
+      alert(`The bus has already crossed ${destinationStop}! Tickets cannot be issued to passed stops until the bus returns.`);
       return;
     }
     if (!fareAmount) {
@@ -439,11 +463,14 @@ export default function ConductorDashboard() {
                 >
                   <option value="" disabled>Select Destination Stop</option>
                   <optgroup label={`Route ${route?.routeNo || ''} Stops (${route?.name || 'Current Route'})`}>
-                    {allNetworkStops.currentRouteStops.map(stopName => (
-                      <option key={`current-${stopName}`} value={stopName}>
-                        {stopName}
-                      </option>
-                    ))}
+                    {route?.stops?.map(stop => {
+                      const isPassed = stop.seqNo < currentNextStopSeq;
+                      return (
+                        <option key={`current-${stop.id}`} value={stop.name} disabled={isPassed}>
+                          {stop.name} {isPassed ? '— Passed' : ''}
+                        </option>
+                      );
+                    })}
                   </optgroup>
                   <optgroup label="Other HRTC Network Stations">
                     {allNetworkStops.otherNetworkStops.map(stopName => (
