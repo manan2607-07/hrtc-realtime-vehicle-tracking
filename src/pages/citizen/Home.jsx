@@ -32,6 +32,22 @@ export default function Home() {
     return Array.from(set).sort();
   }, []);
 
+  // Handle From Location Change
+  const handleFromChange = (val) => {
+    setFromLocation(val);
+    if (val && val === toLocation) {
+      setToLocation('');
+    }
+  };
+
+  // Handle To Location Change
+  const handleToChange = (val) => {
+    setToLocation(val);
+    if (val && val === fromLocation) {
+      setFromLocation('');
+    }
+  };
+
   // Swap From & To
   const handleSwap = () => {
     const temp = fromLocation;
@@ -82,8 +98,8 @@ export default function Home() {
     const fromQ = (fromLocation || '').toLowerCase().trim();
     const toQ = (toLocation || '').toLowerCase().trim();
 
-    // Do not return any buses if no origin and destination stations are selected
-    if (!fromQ && !toQ) {
+    // Do not return any buses if no origin and destination stations are selected or if both are identical
+    if ((!fromQ && !toQ) || (fromQ && toQ && fromQ === toQ)) {
       return [];
     }
 
@@ -177,11 +193,17 @@ export default function Home() {
                   <select
                     id="from-location"
                     value={fromLocation}
-                    onChange={(e) => setFromLocation(e.target.value)}
+                    onChange={(e) => handleFromChange(e.target.value)}
                   >
                     <option value="">-- Select Origin Station --</option>
                     {locationOptions.map(loc => (
-                      <option key={`from-${loc}`} value={loc}>{loc}</option>
+                      <option
+                        key={`from-${loc}`}
+                        value={loc}
+                        disabled={loc === toLocation}
+                      >
+                        {loc}{loc === toLocation ? ' (Selected as Destination)' : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -203,11 +225,17 @@ export default function Home() {
                   <select
                     id="to-location"
                     value={toLocation}
-                    onChange={(e) => setToLocation(e.target.value)}
+                    onChange={(e) => handleToChange(e.target.value)}
                   >
                     <option value="">-- Select Destination --</option>
                     {locationOptions.map(loc => (
-                      <option key={`to-${loc}`} value={loc}>{loc}</option>
+                      <option
+                        key={`to-${loc}`}
+                        value={loc}
+                        disabled={loc === fromLocation}
+                      >
+                        {loc}{loc === fromLocation ? ' (Selected as Origin)' : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -303,19 +331,23 @@ export default function Home() {
           {availableBuses.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-2)' }}>
-                {searchTab === 'station' && !fromLocation && !toLocation ? '📍' : '🚌'}
+                {searchTab === 'station' && fromLocation && toLocation && fromLocation === toLocation ? '⚠️' : searchTab === 'station' && !fromLocation && !toLocation ? '📍' : '🚌'}
               </div>
               <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>
-                {searchTab === 'station' && !fromLocation && !toLocation
-                  ? 'Please Select Origin & Destination Stations'
-                  : 'No HRTC Buses Found'}
+                {searchTab === 'station' && fromLocation && toLocation && fromLocation === toLocation
+                  ? 'Origin & Destination Cannot Be The Same'
+                  : searchTab === 'station' && !fromLocation && !toLocation
+                    ? 'Please Select Origin & Destination Stations'
+                    : 'No HRTC Buses Found'}
               </h3>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
                 {searchTab === 'universal'
                   ? `No buses found matching "${searchQuery}". Try searching by bus number (e.g., 101, 102), route (e.g., Shimla), or station (e.g., Kufri).`
-                  : (!fromLocation && !toLocation)
-                    ? 'Please select your departure (From) and arrival (To) station from the dropdown menus above before clicking Search Buses.'
-                    : `No active buses found running directly between ${fromLocation || 'selected origin'} and ${toLocation || 'selected destination'} on ${journeyDate}. Try selecting another route station or date.`}
+                  : (fromLocation && toLocation && fromLocation === toLocation)
+                    ? 'Your origin (From) and destination (To) station cannot be identical. Please select a different station for your journey.'
+                    : (!fromLocation && !toLocation)
+                      ? 'Please select your departure (From) and arrival (To) station from the dropdown menus above before clicking Search Buses.'
+                      : `No active buses found running directly between ${fromLocation || 'selected origin'} and ${toLocation || 'selected destination'} on ${journeyDate}. Try selecting another route station or date.`}
               </p>
             </div>
           ) : (
