@@ -45,13 +45,11 @@ export default function Home() {
     setHasSearched(true);
   };
 
-  // Filter available buses based on journey selection or universal search
+  // Filter available buses based on journey selection or bus # / route search
   const availableBuses = useMemo(() => {
     if (searchTab === 'universal') {
       const q = searchQuery.toLowerCase().trim();
       if (!q && !hasSearched) return [];
-
-      const cleanDigits = q.replace(/\D/g, '');
 
       return VEHICLES.filter(vehicle => {
         if (!q) return true;
@@ -59,16 +57,6 @@ export default function Home() {
 
         // Bus Number & Registration Number
         const busNoMatch = vehicle.busNumber.toLowerCase().includes(q) || vehicle.registrationNo.toLowerCase().includes(q);
-
-        // Driver Name & Phone
-        const driverNameMatch = vehicle.driver?.name?.toLowerCase().includes(q);
-        const driverPhoneClean = vehicle.driver?.phone ? vehicle.driver.phone.replace(/\D/g, '') : '';
-        const driverPhoneMatch = cleanDigits && cleanDigits.length >= 3 && driverPhoneClean.includes(cleanDigits);
-
-        // Conductor Name & Phone
-        const conductorNameMatch = vehicle.driver?.conductor?.name?.toLowerCase().includes(q);
-        const conductorPhoneClean = vehicle.driver?.conductor?.phone ? vehicle.driver.conductor.phone.replace(/\D/g, '') : '';
-        const conductorPhoneMatch = cleanDigits && cleanDigits.length >= 3 && conductorPhoneClean.includes(cleanDigits);
 
         // Route Name, Origin, Destination, Stops
         const routeMatch = route ? (
@@ -81,7 +69,7 @@ export default function Home() {
         // Service Class / Model
         const serviceMatch = vehicle.serviceClass?.toLowerCase().includes(q) || vehicle.model?.toLowerCase().includes(q);
 
-        return busNoMatch || driverNameMatch || driverPhoneMatch || conductorNameMatch || conductorPhoneMatch || routeMatch || serviceMatch;
+        return busNoMatch || routeMatch || serviceMatch;
       }).map(vehicle => {
         const route = ROUTES.find(r => r.id === vehicle.routeId);
         const busState = busStates[vehicle.id];
@@ -149,7 +137,7 @@ export default function Home() {
           {t('tagline')}
         </h1>
         <p className="text-muted" style={{ maxWidth: '560px', margin: '0 auto var(--space-6)' }}>
-          Search HRTC buses by stations, bus numbers, driver names, phone numbers, conductors, or routes.
+          Search HRTC buses by stations, bus numbers, routes, or destinations.
         </p>
 
         {/* Journey & Universal Search Widget */}
@@ -170,7 +158,7 @@ export default function Home() {
               onClick={() => { setSearchTab('universal'); setHasSearched(true); }}
               style={{ borderRadius: 'var(--radius-full)', fontWeight: 600 }}
             >
-              Search Bus / Driver / Phone / Route
+              Search Bus Number / Route
             </button>
           </div>
 
@@ -243,14 +231,14 @@ export default function Home() {
             <form onSubmit={(e) => { e.preventDefault(); setHasSearched(true); }}>
               <div className="journey-field">
                 <label htmlFor="universal-search" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase' }}>
-                  Search by Bus #, Driver Name, Driver Phone, Conductor, or Route
+                  Search by Bus Number or Route
                 </label>
                 <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input
                     type="text"
                     id="universal-search"
                     value={searchQuery}
-                    placeholder="Type e.g. '101', 'Prem Chand', '98160', 'Dhani Ram', 'Shimla', 'Kufri'..."
+                    placeholder="Type Bus # (e.g., '101', '102', '501'), Route, or Station (e.g., 'Shimla', 'Kufri')..."
                     onChange={(e) => { setSearchQuery(e.target.value); setHasSearched(true); }}
                     style={{
                       height: '46px',
@@ -290,12 +278,12 @@ export default function Home() {
               <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>Try Searching:</span>
                 {[
-                  { label: 'Bus #101', value: '101' },
-                  { label: '👨‍✈️ Prem Chand (Driver)', value: 'Prem Chand' },
-                  { label: '📞 98160-12341 (Phone)', value: '98160' },
-                  { label: '🎫 Dhani Ram (Conductor)', value: 'Dhani Ram' },
-                  { label: '🚌 Shimla Local', value: 'Shimla' },
-                  { label: '⛰️ Kufri Route', value: 'Kufri' },
+                  { label: '🚌 Bus #101', value: '101' },
+                  { label: '🚌 Bus #102', value: '102' },
+                  { label: '🚌 Bus #501', value: '501' },
+                  { label: '⛰️ Shimla Route', value: 'Shimla' },
+                  { label: '🏔️ Kufri Route', value: 'Kufri' },
+                  { label: '🌲 Dharamshala', value: 'Dharamshala' },
                 ].map((chip) => (
                   <button
                     key={chip.value}
@@ -343,7 +331,7 @@ export default function Home() {
               <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>No HRTC Buses Found</h3>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
                 {searchTab === 'universal'
-                  ? `No buses found matching "${searchQuery}". Try searching by driver name (e.g., Prem Chand), driver phone (e.g., 98160), bus number (e.g., 101), or route.`
+                  ? `No buses found matching "${searchQuery}". Try searching by bus number (e.g., 101, 102), route (e.g., Shimla), or station (e.g., Kufri).`
                   : `No active buses found running directly between ${fromLocation || 'selected origin'} and ${toLocation || 'selected destination'} on ${journeyDate}. Try selecting another route station or date.`}
               </p>
             </div>
