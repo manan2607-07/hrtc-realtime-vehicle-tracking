@@ -79,12 +79,17 @@ export default function Home() {
 
     if (!hasSearched) return [];
 
+    const fromQ = (fromLocation || '').toLowerCase().trim();
+    const toQ = (toLocation || '').toLowerCase().trim();
+
+    // Do not return any buses if no origin and destination stations are selected
+    if (!fromQ && !toQ) {
+      return [];
+    }
+
     return VEHICLES.filter(vehicle => {
       const route = ROUTES.find(r => r.id === vehicle.routeId);
       if (!route) return false;
-
-      const fromQ = (fromLocation || '').toLowerCase().trim();
-      const toQ = (toLocation || '').toLowerCase().trim();
 
       const matchFrom = !fromQ || route.origin.toLowerCase().includes(fromQ) || route.stops.some(s => s.name.toLowerCase().includes(fromQ));
       const matchTo = !toQ || route.destination.toLowerCase().includes(toQ) || route.stops.some(s => s.name.toLowerCase().includes(toQ));
@@ -297,12 +302,20 @@ export default function Home() {
 
           {availableBuses.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-2)' }}>🚌</div>
-              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>No HRTC Buses Found</h3>
+              <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-2)' }}>
+                {searchTab === 'station' && !fromLocation && !toLocation ? '📍' : '🚌'}
+              </div>
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>
+                {searchTab === 'station' && !fromLocation && !toLocation
+                  ? 'Please Select Origin & Destination Stations'
+                  : 'No HRTC Buses Found'}
+              </h3>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
                 {searchTab === 'universal'
                   ? `No buses found matching "${searchQuery}". Try searching by bus number (e.g., 101, 102), route (e.g., Shimla), or station (e.g., Kufri).`
-                  : `No active buses found running directly between ${fromLocation || 'selected origin'} and ${toLocation || 'selected destination'} on ${journeyDate}. Try selecting another route station or date.`}
+                  : (!fromLocation && !toLocation)
+                    ? 'Please select your departure (From) and arrival (To) station from the dropdown menus above before clicking Search Buses.'
+                    : `No active buses found running directly between ${fromLocation || 'selected origin'} and ${toLocation || 'selected destination'} on ${journeyDate}. Try selecting another route station or date.`}
               </p>
             </div>
           ) : (
