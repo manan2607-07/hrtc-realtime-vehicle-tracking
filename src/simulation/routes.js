@@ -40,8 +40,7 @@ export const ROUTES = [
     ],
     // Segments where GPS signal loss is common (tunnels, valleys)
     signalLossZones: [
-      { startIdx: 0, endIdx: 4, probability: 0.3, label: 'Victory Tunnel' },
-      { startIdx: 25, endIdx: 30, probability: 0.2, label: 'Dhalli valley' },
+      { startIdx: 1, endIdx: 1, label: 'Victory Tunnel' },
     ],
     // Average speeds per segment (km/h) — slower on steep/winding stretches
     segmentSpeeds: {
@@ -87,9 +86,7 @@ export const ROUTES = [
       [32.1500, 77.1750], [32.1800, 77.1800], [32.2100, 77.1850], [32.2432, 77.1892],
     ],
     signalLossZones: [
-      { startIdx: 10, endIdx: 14, probability: 0.4, label: 'Bilaspur hills' },
-      { startIdx: 22, endIdx: 26, probability: 0.5, label: 'Pandoh tunnel zone' },
-      { startIdx: 33, endIdx: 37, probability: 0.3, label: 'Kullu-Naggar valley' },
+      { startIdx: 24, endIdx: 24, label: 'Pandoh Tunnel' },
     ],
     segmentSpeeds: {
       normal: [48, 52, 45, 42, 48, 52, 48, 42, 48, 55, 60, 55, 48, 52, 55, 60, 55, 48, 45, 48, 52, 55, 48, 42, 48, 55, 60, 55, 48, 55, 60, 55, 48, 52, 55, 48, 45, 48, 52],
@@ -122,9 +119,7 @@ export const ROUTES = [
       [32.2370, 76.3205], [32.2380, 76.3200], [32.2390, 76.3202], [32.2400, 76.3205],
       [32.2410, 76.3208], [32.2420, 76.3210], [32.2423, 76.3200], [32.2426, 76.3188],
     ],
-    signalLossZones: [
-      { startIdx: 8, endIdx: 12, probability: 0.15, label: 'Gangchen hill curve' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [28, 25, 25, 28, 25, 22, 25, 22, 25, 25, 22, 20, 22, 25, 22, 20, 22, 20, 20],
       touristSeason: [15, 12, 12, 15, 12, 10, 12, 10, 12, 12, 10, 8, 10, 12, 10, 8, 10, 8, 8],
@@ -157,9 +152,7 @@ export const ROUTES = [
       [30.8920, 77.0250], [30.8600, 76.9900], [30.8350, 76.9610], [30.8380, 76.9350],
       [30.7500, 76.8700], [30.6420, 76.8170], [30.6800, 76.7800], [30.7230, 76.7450]
     ],
-    signalLossZones: [
-      { startIdx: 2, endIdx: 5, probability: 0.25, label: 'Kandaghat-Solan valley' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [45, 52, 55, 60, 65, 72, 68, 62, 55, 48, 62, 68, 75, 65, 58],
       touristSeason: [28, 35, 38, 42, 45, 52, 48, 42, 38, 32, 42, 48, 55, 45, 38],
@@ -192,9 +185,7 @@ export const ROUTES = [
       [31.5700, 76.1800], [31.4685, 76.2708], [31.3500, 76.3800], [31.2350, 76.5020],
       [31.1000, 76.5100], [30.9660, 76.5240], [30.8400, 76.6300], [30.7230, 76.7450]
     ],
-    signalLossZones: [
-      { startIdx: 3, endIdx: 6, probability: 0.2, label: 'Ranital-Dehra ghats' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [48, 55, 60, 55, 62, 68, 75, 72, 65, 70, 75, 80, 72, 65, 58],
       touristSeason: [32, 38, 42, 38, 45, 50, 55, 52, 45, 50, 55, 60, 52, 45, 38],
@@ -230,7 +221,7 @@ export const ROUTES = [
       [30.3780, 76.7760], [29.9690, 76.8780], [29.3900, 76.9690], [28.6665, 77.2333]
     ],
     signalLossZones: [
-      { startIdx: 2, endIdx: 5, probability: 0.35, label: 'Pandoh-Aut tunnel section' },
+      { startIdx: 4, endIdx: 4, label: 'Aut Tunnel' },
     ],
     segmentSpeeds: {
       normal: [52, 58, 52, 48, 58, 65, 60, 55, 75, 82, 85, 88, 85, 80, 75],
@@ -264,9 +255,7 @@ export const ROUTES = [
       [31.7820, 76.3480], [31.8750, 76.3240], [31.9800, 76.2900], [32.0998, 76.2691],
       [32.1600, 76.2900], [32.2190, 76.3234]
     ],
-    signalLossZones: [
-      { startIdx: 1, endIdx: 4, probability: 0.3, label: 'Shalaghat mountain bend' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [42, 48, 42, 48, 55, 50, 58, 62, 55, 48, 55, 48, 42],
       touristSeason: [28, 32, 28, 32, 38, 35, 42, 45, 38, 32, 38, 32, 28],
@@ -294,9 +283,7 @@ export const ROUTES = [
       [30.9045, 77.0967], [30.9320, 77.1080], [30.9648, 77.1165], [31.0200, 77.1250],
       [31.0650, 77.1350], [31.1280, 77.1240], [31.1048, 77.1650]
     ],
-    signalLossZones: [
-      { startIdx: 2, endIdx: 4, probability: 0.2, label: 'Taradevi ridge' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [42, 45, 48, 42, 48, 42],
       touristSeason: [28, 30, 32, 28, 32, 28],
