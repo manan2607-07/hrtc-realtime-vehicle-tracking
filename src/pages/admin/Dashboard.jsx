@@ -16,12 +16,14 @@ const [activeFilter, setActiveFilter] = useState('all');
 
 const stats = useMemo(() => {
   const all = Object.values(busStates);
+  const total = all.length;
   const running = all.filter(b => b.status === VEHICLE_STATUS.RUNNING).length;
   const delayed = all.filter(b => b.status === VEHICLE_STATUS.DELAYED).length;
   const breakdown = all.filter(b => b.status === VEHICLE_STATUS.BREAKDOWN).length;
-  const signalLost = all.filter(b => b.isSignalLost).length;
-  const onTime = all.length > 0 ? Math.round(((running) / all.length) * 100) : 0;
-  return { total: all.length, running, delayed, breakdown, signalLost, onTime };
+  const signalLost = all.filter(b => b.isSignalLost || b.status === VEHICLE_STATUS.SIGNAL_LOST).length;
+  const activeBuses = total - breakdown;
+  const onTime = activeBuses > 0 ? Math.round((running / activeBuses) * 100) : 0;
+  return { total, activeBuses, running, delayed, breakdown, signalLost, onTime };
 }, [busStates]);
 
 const emissionsSummary = getFleetEmissionsSummary();
@@ -86,7 +88,10 @@ return (
           <BusIcon size={20} color="var(--color-info)" />
         </div>
         <div className="stat-card__label">{t('totalBuses')}</div>
-        <div className="stat-card__value stat-card__value--info">{stats.total}</div>
+        <div className="stat-card__value stat-card__value--info">{stats.activeBuses}</div>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          {stats.running} Running · {stats.delayed} Delayed ({stats.total} Total)
+        </div>
       </div>
       <div className="stat-card">
         <div className="stat-card__icon stat-card__icon--success">
@@ -94,6 +99,9 @@ return (
         </div>
         <div className="stat-card__label">{t('onTimePerformance')}</div>
         <div className="stat-card__value stat-card__value--success">{stats.onTime}%</div>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          {stats.running} of {stats.activeBuses} buses on schedule
+        </div>
       </div>
       <div className="stat-card">
         <div className="stat-card__icon stat-card__icon--warning">
@@ -101,6 +109,9 @@ return (
         </div>
         <div className="stat-card__label">{t('signalLostCount')}</div>
         <div className="stat-card__value stat-card__value--warning">{stats.signalLost}</div>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          {stats.signalLost === 0 ? 'All GPS feeds online' : `${stats.signalLost} in mountain/tunnel zones`}
+        </div>
       </div>
       <div className="stat-card">
         <div className="stat-card__icon stat-card__icon--success">
@@ -108,6 +119,9 @@ return (
         </div>
         <div className="stat-card__label">{t('cleanFleetPercent')}</div>
         <div className="stat-card__value stat-card__value--success">{emissionsSummary.cleanPercentage}%</div>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          {emissionsSummary.cleanCount} EV / CNG / BS-VI of {emissionsSummary.total} total
+        </div>
       </div>
     </div>
 
