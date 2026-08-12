@@ -71,9 +71,28 @@ useEffect(() => {
     })
     .catch(err => console.warn('Could not load official India boundary overlay:', err));
 
+  // Trigger map resize check to prevent Leaflet grey tile rendering bugs
+  const resizeTimer = setTimeout(() => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize();
+    }
+  }, 250);
+
+  const resizeObserver = new ResizeObserver(() => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize();
+    }
+  });
+
+  if (mapRef.current) {
+    resizeObserver.observe(mapRef.current);
+  }
+
   mapInstanceRef.current = map;
 
   return () => {
+    clearTimeout(resizeTimer);
+    resizeObserver.disconnect();
     map.remove();
     mapInstanceRef.current = null;
   };
@@ -93,7 +112,7 @@ useEffect(() => {
     const polyline = L.polyline(route.waypoints, {
       color: route.color || '#2980B9',
       weight: 4,
-      opacity: 0.7,
+      opacity: 0.75,
       smoothFactor: 1,
     }).addTo(map);
     routeLayersRef.current[route.id] = polyline;
@@ -151,7 +170,7 @@ useEffect(() => {
       : 'bus-marker-icon--running';
 
     const isSelected = bus.id === selectedBusId;
-    const busNum = bus.busNumber ? bus.busNumber.replace('Bus #', '') : (bus.registrationNo || (bus.id ? bus.id.replace('bus-', '') : ''));
+    const busNum = bus.busNumber ? bus.busNumber.replace('Bus #', '') : (bus.id ? bus.id.replace('bus-', '') : '');
 
     const iconHtml = `
       <div class="bus-marker-container ${statusClass} ${isSelected ? 'bus-marker-container--selected' : ''}">
@@ -171,21 +190,31 @@ useEffect(() => {
       iconAnchor: [20, 24],
     });
 
+    const popupHtml = `
+      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 2px 4px; min-width: 170px;">
+        <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 2px;">
+          ${bus.busNumber || bus.id} ${bus.registrationNo ? `<span style="color: #64748b; font-weight: 500;">(${bus.registrationNo})</span>` : ''}
+        </div>
+        ${bus.routeName ? `<div style="font-size: 11px; color: #2563eb; font-weight: 600; margin-bottom: 4px;">${bus.routeName}</div>` : ''}
+        <div style="font-size: 11px; color: #334155; margin-bottom: 2px;">
+          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Status:</strong> <span style="text-transform: capitalize; color: ${bus.status === 'running' ? '#16a34a' : bus.status === 'delayed' ? '#d97706' : '#dc2626'}; font-weight: 600;">${bus.status || 'running'}</span>
+        </div>
+        ${bus.driverName ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Driver: ${bus.driverName}</div>` : ''}
+      </div>
+    `;
+
     if (busMarkersRef.current[bus.id]) {
       // Update existing marker position smoothly
       const marker = busMarkersRef.current[bus.id];
       marker.setLatLng([bus.lat, bus.lng]);
       marker.setIcon(icon);
+      marker.setPopupContent(popupHtml);
     } else {
       // Create new marker
       const marker = L.marker([bus.lat, bus.lng], { icon, zIndexOffset: isSelected ? 1000 : 0 })
         .addTo(map);
 
-      marker.bindPopup(`
-        <strong>${bus.registrationNo || bus.id}</strong>
-        <br/>Speed: ${Math.round(bus.speed || 0)} km/h
-        <br/>Status: ${bus.status}
-      `);
+      marker.bindPopup(popupHtml);
 
       if (onBusClick) {
         marker.on('click', () => onBusClick(bus));

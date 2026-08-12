@@ -46,12 +46,22 @@ return Object.values(busStates).filter(bs => {
 }, [busStates, filterDepot, filterRoute, filterFuel, filterStatus, searchQuery]);
 
 const busesForMap = filteredBuses.map(bs => {
-const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
-return {
-  id: bs.vehicleId, lat: bs.lat, lng: bs.lng,
-  heading: bs.heading, speed: bs.speed, status: bs.status,
-  registrationNo: vehicle?.registrationNo,
-};
+  const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
+  const route = ROUTES.find(r => r.id === bs.routeId);
+  return {
+    id: bs.vehicleId,
+    lat: bs.lat,
+    lng: bs.lng,
+    heading: bs.heading,
+    speed: bs.speed,
+    status: bs.status,
+    busNumber: vehicle?.busNumber,
+    registrationNo: vehicle?.registrationNo,
+    serviceClass: vehicle?.serviceClass,
+    driverName: vehicle?.driver?.name,
+    routeName: route?.name,
+    routeColor: route?.color,
+  };
 });
 
 const routesForMap = ROUTES.map(r => ({ id: r.id, waypoints: r.waypoints, color: r.color }));

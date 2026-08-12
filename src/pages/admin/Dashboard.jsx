@@ -32,10 +32,20 @@ const recentAlerts = anomalyLog.filter(a => a.status !== 'resolved').slice(0, 5)
 const busesForMap = useMemo(() =>
   Object.values(busStates).map(bs => {
     const vehicle = VEHICLES.find(v => v.id === bs.vehicleId);
+    const route = ROUTES.find(r => r.id === bs.routeId);
     return {
-      id: bs.vehicleId, lat: bs.lat, lng: bs.lng,
-      heading: bs.heading, speed: bs.speed, status: bs.status,
+      id: bs.vehicleId,
+      lat: bs.lat,
+      lng: bs.lng,
+      heading: bs.heading,
+      speed: bs.speed,
+      status: bs.status,
+      busNumber: vehicle?.busNumber,
       registrationNo: vehicle?.registrationNo,
+      serviceClass: vehicle?.serviceClass,
+      driverName: vehicle?.driver?.name,
+      routeName: route?.name,
+      routeColor: route?.color,
     };
   }), [busStates]);
 
