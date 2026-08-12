@@ -380,12 +380,29 @@ export function createSimulation() {
     },
 
     resolveAlert(alertId) {
+      const alert = anomalyLog.find(a => a.id === alertId);
+      if (alert && alert.vehicleId && busStates[alert.vehicleId]) {
+        busStates[alert.vehicleId] = {
+          ...busStates[alert.vehicleId],
+          isSignalLost: false,
+          status: VEHICLE_STATUS.RUNNING,
+        };
+      }
       anomalyLog = anomalyLog.map(a =>
         a.id === alertId ? { ...a, status: 'resolved' } : a
       );
     },
 
     resolveAllAlerts() {
+      Object.keys(busStates).forEach(id => {
+        if (busStates[id].isSignalLost || busStates[id].status !== VEHICLE_STATUS.RUNNING) {
+          busStates[id] = {
+            ...busStates[id],
+            isSignalLost: false,
+            status: VEHICLE_STATUS.RUNNING,
+          };
+        }
+      });
       anomalyLog = anomalyLog.map(a => ({ ...a, status: 'resolved' }));
     },
 

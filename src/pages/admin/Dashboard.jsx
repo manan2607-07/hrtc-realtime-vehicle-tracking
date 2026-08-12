@@ -172,10 +172,7 @@ return (
           ) : (
             <div className="alert-list">
               {recentAlerts.map(alert => (
-                <div key={alert.id} className={`alert-item alert-item--${alert.status}`}>
-                  <span className="alert-item__icon">
-                    {alert.type === 'breakdown' ? '' : alert.type === 'signal-lost' ? '' : ''}
-                  </span>
+                <div key={alert.id} className={`alert-item alert-item--${alert.status}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
                   <div className="alert-item__content">
                     <div className="alert-item__message">{alert.message}</div>
                     <div className="alert-item__time">
@@ -185,6 +182,13 @@ return (
                       </span>
                     </div>
                   </div>
+                  <button
+                    className="btn btn--success btn--sm"
+                    style={{ padding: '4px 10px', fontSize: '0.75rem', flexShrink: 0 }}
+                    onClick={() => resolveAnomaly ? resolveAnomaly(alert.id) : resolveAlert(alert.id)}
+                  >
+                    Resolve & Fix
+                  </button>
                 </div>
               ))}
             </div>
