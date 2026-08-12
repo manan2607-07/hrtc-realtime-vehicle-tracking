@@ -289,12 +289,11 @@ export function createSimulation() {
       anomalyLog = [...newEvents, ...anomalyLog].slice(0, 100);
     }
 
-    // Auto-resolve alerts automatically whenever signal returns or breakdown recovers
+    // Breakdown recovery & signal recovery auto-resolution
     for (const id of Object.keys(newStates)) {
       const curr = newStates[id];
       if (!curr) continue;
 
-      // When signal returns online, auto-resolve signal loss alert instantly
       if (!curr.isSignalLost) {
         anomalyLog = anomalyLog.map(a =>
           a.vehicleId === id && a.type === 'signal-lost' && a.status !== 'resolved'
@@ -302,7 +301,6 @@ export function createSimulation() {
             : a
         );
       }
-      // When vehicle is no longer broken down, auto-resolve breakdown alert instantly
       if (curr.status !== VEHICLE_STATUS.BREAKDOWN) {
         anomalyLog = anomalyLog.map(a =>
           a.vehicleId === id && a.type === 'breakdown' && a.status !== 'resolved'
@@ -311,19 +309,6 @@ export function createSimulation() {
         );
       }
     }
-
-    // Auto-resolve any active alert older than 15 seconds
-    const AUTO_RESOLVE_MS = 15000;
-    const nowMs = Date.now();
-    anomalyLog = anomalyLog.map(a => {
-      if (a.status !== 'resolved' && a.timestamp) {
-        const age = nowMs - new Date(a.timestamp).getTime();
-        if (age > AUTO_RESOLVE_MS) {
-          return { ...a, status: 'resolved' };
-        }
-      }
-      return a;
-    });
 
     busStates = newStates;
 

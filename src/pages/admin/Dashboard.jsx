@@ -27,7 +27,8 @@ const stats = useMemo(() => {
 }, [busStates]);
 
 const emissionsSummary = getFleetEmissionsSummary();
-const recentAlerts = anomalyLog.filter(a => a.status !== 'resolved').slice(0, 5);
+const activeAlerts = anomalyLog.filter(a => a.status !== 'resolved');
+const recentAlerts = activeAlerts.length > 0 ? activeAlerts.slice(0, 5) : anomalyLog.slice(0, 5);
 
 const busesForMap = useMemo(() =>
   Object.values(busStates).map(bs => {
