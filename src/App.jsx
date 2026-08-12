@@ -156,25 +156,27 @@ return (
     <div className="admin-body">
       <aside className="admin-sidebar">
         <NavLink to="/admin" end className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon"></span>
+          <span className="admin-sidebar__link-icon">📊</span>
           {t('dashboard')}
         </NavLink>
         <NavLink to="/admin/fleet" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon"></span>
+          <span className="admin-sidebar__link-icon">📡</span>
           {t('navFleetMap')}
         </NavLink>
         <NavLink to="/admin/routes" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon"></span>
+          <span className="admin-sidebar__link-icon">🛣️</span>
           {t('navRouteManager')}
         </NavLink>
         <NavLink to="/admin/reports" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon"></span>
+          <span className="admin-sidebar__link-icon">📈</span>
           {t('navReports')}
         </NavLink>
         <NavLink to="/admin/alerts" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+          <span className="admin-sidebar__link-icon">🚨</span>
           {t('navAlerts')}
         </NavLink>
         <NavLink to="/admin/staff" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+          <span className="admin-sidebar__link-icon">👨‍✈️</span>
           Staff Directory & Locations
         </NavLink>
       </aside>
