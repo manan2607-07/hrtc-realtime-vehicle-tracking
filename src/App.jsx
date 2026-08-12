@@ -32,12 +32,12 @@ import DriverDashboard from './pages/driver/DriverDashboard';
 import ConductorDashboard from './pages/conductor/ConductorDashboard';
 
 /* ================================================================
- ROUTE GUARD — redirects to /login if role doesn't match or session compromised
+ ROUTE GUARD — redirects to appropriate portal if unauthenticated
  ================================================================ */
-function RequireRole({ allowedRoles, children }) {
+function RequireRole({ allowedRoles, fallbackPath = '/login', children }) {
   const { session } = useAuth();
-  if (!session || !verifySessionIntegrity(session)) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
+  if (!session || !verifySessionIntegrity(session)) return <Navigate to={fallbackPath} replace />;
+  if (!allowedRoles.includes(session.role)) return <Navigate to={fallbackPath} replace />;
   return children || <Outlet />;
 }
 
@@ -273,41 +273,37 @@ return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public passenger entry */}
+          {/* Public passenger routes — accessible to all passengers & citizens */}
+          <Route element={<CitizenLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/track/:busId" element={<LiveTrack />} />
+            <Route path="/stop/:stopId" element={<StopDetail />} />
+            <Route path="/route/:routeId" element={<RouteDetail />} />
+            <Route path="/sms" element={<SMSDemo />} />
+          </Route>
+
+          {/* Dedicated Login Pages */}
           <Route path="/login" element={<RoleLogin />} />
-          {/* Staff-only login — Driver & Conductor */}
           <Route path="/staff" element={<StaffLogin />} />
-          {/* Dedicated Admin Portal — HRTC Officers & Admins */}
           <Route path="/admin-portal" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* Customer routes — restricted to 'customer' role */}
-          <Route element={<RequireRole allowedRoles={['customer']} />}>
-            <Route element={<CitizenLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/track/:busId" element={<LiveTrack />} />
-              <Route path="/stop/:stopId" element={<StopDetail />} />
-              <Route path="/route/:routeId" element={<RouteDetail />} />
-              <Route path="/sms" element={<SMSDemo />} />
-            </Route>
-          </Route>
-
-          {/* Driver routes — restricted to 'driver' role */}
-          <Route element={<RequireRole allowedRoles={['driver']} />}>
+          {/* Driver routes — restricted to 'driver' role (fallback to /staff) */}
+          <Route element={<RequireRole allowedRoles={['driver']} fallbackPath="/staff" />}>
             <Route path="/driver" element={<DriverLayout />}>
               <Route index element={<DriverDashboard />} />
             </Route>
           </Route>
 
-          {/* Conductor routes — restricted to 'conductor' role */}
-          <Route element={<RequireRole allowedRoles={['conductor']} />}>
+          {/* Conductor routes — restricted to 'conductor' role (fallback to /staff) */}
+          <Route element={<RequireRole allowedRoles={['conductor']} fallbackPath="/staff" />}>
             <Route path="/conductor" element={<ConductorLayout />}>
               <Route index element={<ConductorDashboard />} />
             </Route>
           </Route>
 
-          {/* Admin routes — restricted to 'admin' role */}
-          <Route element={<RequireRole allowedRoles={['admin']} />}>
+          {/* Admin routes — restricted to 'admin' role (fallback to /admin-portal) */}
+          <Route element={<RequireRole allowedRoles={['admin']} fallbackPath="/admin-portal" />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="fleet" element={<FleetMap />} />
@@ -318,8 +314,8 @@ return (
             </Route>
           </Route>
 
-          {/* Catch-all: redirect to login */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* Catch-all: redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
