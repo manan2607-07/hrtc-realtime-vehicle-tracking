@@ -67,7 +67,7 @@ export default function StaffLogin() {
     <div className="login-page">
       <div className="login-page__header">
         <img src="/hrtc-logo.svg" alt="HRTC Logo" className="login-page__logo-img" />
-        <h1 className="login-page__title">HRTC Staff Portal</h1>
+        <h1 className="login-page__title">HRTC Bus Staff Portal</h1>
         <p className="login-page__subtitle">Authorized Driver & Conductor Personnel Only — Credential Verification Required</p>
       </div>
 
@@ -100,7 +100,7 @@ export default function StaffLogin() {
           <div className="login-form" style={{ '--role-color': staffRoles.find(r => r.id === activeTab)?.color }}>
             <div className="login-form__header">
               <h2 className="login-form__title">{staffRoles.find(r => r.id === activeTab)?.title} Login</h2>
-              <p className="login-form__desc">Credentials are verified against the HRTC Staff Database</p>
+              <p className="login-form__desc">Credentials are verified against the HRTC Bus Staff Database</p>
             </div>
 
             {error && (
