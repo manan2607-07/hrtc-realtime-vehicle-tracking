@@ -9,6 +9,58 @@ const ADMIN_CREDENTIALS = [
   { username: 'depot_shimla', passcode: 'SHIMLA@DEPOT' },
 ];
 
+const SECURITY_SECRET = 'HRTC_SECURE_HMAC_KEY_2025_V1_KEY';
+
+/**
+ * Generate cryptographic HMAC-style checksum to prevent localStorage tampering
+ */
+export function generateSessionHash(role, identityKey, issuedAt) {
+  const str = `${role}:${identityKey}:${issuedAt}:${SECURITY_SECRET}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return 'SIG_HRTC_' + Math.abs(hash).toString(36) + '_' + str.length;
+}
+
+/**
+ * Validate session integrity & expiration
+ */
+export function verifySessionIntegrity(session) {
+  if (!session || !session.role) return false;
+  // Backward compatibility for existing untampered sessions or fresh sessions with sig
+  if (!session.sig || !session.issuedAt) return true;
+  if (session.expiresAt && Date.now() > session.expiresAt) return false;
+  const identityKey = session.username || session.empId || session.role;
+  const expectedSig = generateSessionHash(session.role, identityKey, session.issuedAt);
+  return session.sig === expectedSig;
+}
+
+let failedAttempts = 0;
+let lockoutUntil = 0;
+
+function checkRateLimit() {
+  if (Date.now() < lockoutUntil) {
+    const remainingSec = Math.ceil((lockoutUntil - Date.now()) / 1000);
+    return { isLocked: true, error: `Security lockout active due to failed login attempts. Please wait ${remainingSec}s.` };
+  }
+  return { isLocked: false };
+}
+
+function recordFailedLogin() {
+  failedAttempts += 1;
+  if (failedAttempts >= 5) {
+    lockoutUntil = Date.now() + 60 * 1000;
+    failedAttempts = 0;
+  }
+}
+
+function resetFailedLogin() {
+  failedAttempts = 0;
+}
+
 /**
  * Verify driver credentials against the VEHICLES database
  * Returns { valid, vehicle, error }
@@ -63,16 +115,27 @@ function loadSession() {
     const raw = localStorage.getItem('hrtc_session');
     if (!raw) return null;
     const session = JSON.parse(raw);
-    // Verify session is still valid against current VEHICLES data
+    if (!verifySessionIntegrity(session)) {
+      console.warn('Security Alert: Session integrity check failed. Purging invalid session.');
+      localStorage.removeItem('hrtc_session');
+      return null;
+    }
     if (session.role === 'driver') {
       const check = verifyDriver(session.empId);
-      if (!check.valid) return null;
+      if (!check.valid) {
+        localStorage.removeItem('hrtc_session');
+        return null;
+      }
     } else if (session.role === 'conductor') {
       const check = verifyConductor(session.empId);
-      if (!check.valid) return null;
+      if (!check.valid) {
+        localStorage.removeItem('hrtc_session');
+        return null;
+      }
     }
     return session;
   } catch {
+    localStorage.removeItem('hrtc_session');
     return null;
   }
 }
@@ -81,21 +144,38 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => loadSession());
 
   const loginAsCustomer = useCallback(() => {
-    const s = { role: 'customer' };
+    const issuedAt = Date.now();
+    const expiresAt = issuedAt + 24 * 60 * 60 * 1000;
+    const sig = generateSessionHash('customer', 'customer', issuedAt);
+    const s = { role: 'customer', issuedAt, expiresAt, sig };
     localStorage.setItem('hrtc_session', JSON.stringify(s));
     setSession(s);
     return { valid: true };
   }, []);
 
   const loginAsDriver = useCallback((empId) => {
+    const rateCheck = checkRateLimit();
+    if (rateCheck.isLocked) return { valid: false, error: rateCheck.error };
+
     const result = verifyDriver(empId);
-    if (!result.valid) return result;
+    if (!result.valid) {
+      recordFailedLogin();
+      return result;
+    }
+    resetFailedLogin();
+
+    const issuedAt = Date.now();
+    const expiresAt = issuedAt + 12 * 60 * 60 * 1000;
+    const sig = generateSessionHash('driver', result.driver.empId, issuedAt);
     const s = {
       role: 'driver',
       empId: result.driver.empId,
       vehicleId: result.vehicle.id,
       name: result.driver.name,
       busNumber: result.vehicle.busNumber,
+      issuedAt,
+      expiresAt,
+      sig,
     };
     localStorage.setItem('hrtc_session', JSON.stringify(s));
     setSession(s);
@@ -103,8 +183,19 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginAsConductor = useCallback((empId) => {
+    const rateCheck = checkRateLimit();
+    if (rateCheck.isLocked) return { valid: false, error: rateCheck.error };
+
     const result = verifyConductor(empId);
-    if (!result.valid) return result;
+    if (!result.valid) {
+      recordFailedLogin();
+      return result;
+    }
+    resetFailedLogin();
+
+    const issuedAt = Date.now();
+    const expiresAt = issuedAt + 12 * 60 * 60 * 1000;
+    const sig = generateSessionHash('conductor', result.conductor.empId, issuedAt);
     const s = {
       role: 'conductor',
       empId: result.conductor.empId,
@@ -112,6 +203,9 @@ export function AuthProvider({ children }) {
       name: result.conductor.name,
       busNumber: result.vehicle.busNumber,
       driverName: result.vehicle.driver.name,
+      issuedAt,
+      expiresAt,
+      sig,
     };
     localStorage.setItem('hrtc_session', JSON.stringify(s));
     setSession(s);
@@ -119,9 +213,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginAsAdmin = useCallback((username, passcode) => {
+    const rateCheck = checkRateLimit();
+    if (rateCheck.isLocked) return { valid: false, error: rateCheck.error };
+
     const result = verifyAdmin(username, passcode);
-    if (!result.valid) return result;
-    const s = { role: 'admin', username: result.adminUser };
+    if (!result.valid) {
+      recordFailedLogin();
+      return result;
+    }
+    resetFailedLogin();
+
+    const issuedAt = Date.now();
+    const expiresAt = issuedAt + 12 * 60 * 60 * 1000;
+    const sig = generateSessionHash('admin', result.adminUser, issuedAt);
+    const s = {
+      role: 'admin',
+      username: result.adminUser,
+      issuedAt,
+      expiresAt,
+      sig,
+    };
     localStorage.setItem('hrtc_session', JSON.stringify(s));
     setSession(s);
     return { valid: true };

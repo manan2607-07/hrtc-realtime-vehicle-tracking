@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink, Link, Navigate, Outlet } from 'r
 import { useEffect, useState } from 'react';
 import { SimulationProvider } from './context/SimulationContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, verifySessionIntegrity } from './context/AuthContext';
 import LanguageToggle from './components/LanguageToggle';
 import ToastContainer from './components/ToastContainer';
 import { DashboardIcon, MapIcon, RouteIcon, ReportIcon, AlertIcon, StaffIcon } from './components/Icon';
@@ -32,13 +32,13 @@ import DriverDashboard from './pages/driver/DriverDashboard';
 import ConductorDashboard from './pages/conductor/ConductorDashboard';
 
 /* ================================================================
- ROUTE GUARD — redirects to /login if role doesn't match
+ ROUTE GUARD — redirects to /login if role doesn't match or session compromised
  ================================================================ */
 function RequireRole({ allowedRoles, children }) {
-const { session } = useAuth();
-if (!session) return <Navigate to="/login" replace />;
-if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
-return children || <Outlet />;
+  const { session } = useAuth();
+  if (!session || !verifySessionIntegrity(session)) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
+  return children || <Outlet />;
 }
 
 /* ================================================================
