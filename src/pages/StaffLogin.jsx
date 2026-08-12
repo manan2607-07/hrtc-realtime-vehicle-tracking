@@ -152,23 +152,7 @@ export default function StaffLogin() {
         </div>
       )}
 
-      <div style={{ marginTop: 'var(--space-6)', textAlign: 'center' }}>
-        <button
-          type="button"
-          onClick={() => navigate('/admin-portal')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--color-primary)',
-            fontSize: 'var(--font-size-xs)',
-            fontWeight: 600,
-            cursor: 'pointer',
-            textDecoration: 'underline',
-          }}
-        >
-          Are you an HRTC Officer / Admin? Switch to Admin Portal →
-        </button>
-      </div>
+
 
       <div className="login-page__footer">
         <p>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</p>
