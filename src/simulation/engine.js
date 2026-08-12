@@ -47,12 +47,6 @@ function calcHeading(lat1, lng1, lat2, lng2) {
  * Check if a waypoint index is in a signal loss zone
  */
 function checkSignalLoss(route, wpIdx) {
-  if (!route.signalLossZones) return false;
-  for (const zone of route.signalLossZones) {
-    if (wpIdx >= zone.startIdx && wpIdx <= zone.endIdx) {
-      return true;
-    }
-  }
   return false;
 }
 

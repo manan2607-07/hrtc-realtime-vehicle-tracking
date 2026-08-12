@@ -39,9 +39,7 @@ export const ROUTES = [
       [31.0900, 77.2430], [31.0930, 77.2510], [31.0950, 77.2570], [31.0972, 77.2641],
     ],
     // Segments where GPS signal loss is common (tunnels, valleys)
-    signalLossZones: [
-      { startIdx: 1, endIdx: 1, label: 'Victory Tunnel' },
-    ],
+    signalLossZones: [],
     // Average speeds per segment (km/h) — slower on steep/winding stretches
     segmentSpeeds: {
       normal: [30, 28, 25, 22, 25, 28, 25, 22, 20, 25, 28, 32, 30, 28, 25, 28, 30, 32, 35, 30, 28, 25, 28, 30, 32, 30, 28, 25, 28, 30, 32, 35, 32, 30, 28],
@@ -85,9 +83,7 @@ export const ROUTES = [
       [31.9592, 77.1089], [32.0000, 77.1200], [32.0500, 77.1400], [32.1147, 77.1710],
       [32.1500, 77.1750], [32.1800, 77.1800], [32.2100, 77.1850], [32.2432, 77.1892],
     ],
-    signalLossZones: [
-      { startIdx: 24, endIdx: 24, label: 'Pandoh Tunnel' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [48, 52, 45, 42, 48, 52, 48, 42, 48, 55, 60, 55, 48, 52, 55, 60, 55, 48, 45, 48, 52, 55, 48, 42, 48, 55, 60, 55, 48, 55, 60, 55, 48, 52, 55, 48, 45, 48, 52],
       touristSeason: [28, 32, 25, 22, 28, 32, 28, 22, 28, 35, 40, 35, 28, 32, 35, 40, 35, 28, 25, 28, 32, 35, 28, 22, 28, 35, 40, 35, 28, 35, 40, 35, 28, 32, 35, 28, 25, 28, 32],
@@ -220,9 +216,7 @@ export const ROUTES = [
       [31.3324, 76.7574], [31.2330, 76.5500], [30.9660, 76.5240], [30.7230, 76.7450],
       [30.3780, 76.7760], [29.9690, 76.8780], [29.3900, 76.9690], [28.6665, 77.2333]
     ],
-    signalLossZones: [
-      { startIdx: 4, endIdx: 4, label: 'Aut Tunnel' },
-    ],
+    signalLossZones: [],
     segmentSpeeds: {
       normal: [52, 58, 52, 48, 58, 65, 60, 55, 75, 82, 85, 88, 85, 80, 75],
       touristSeason: [35, 40, 35, 30, 40, 45, 40, 35, 55, 62, 65, 68, 65, 60, 55],
