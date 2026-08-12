@@ -5,6 +5,7 @@ import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LanguageToggle from './components/LanguageToggle';
 import ToastContainer from './components/ToastContainer';
+import { DashboardIcon, MapIcon, RouteIcon, ReportIcon, AlertIcon, StaffIcon } from './components/Icon';
 
 // Login
 import RoleLogin from './pages/RoleLogin';
@@ -156,21 +157,27 @@ return (
   <div className="admin-body">
     <aside className="admin-sidebar">
       <NavLink to="/admin" end className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        <DashboardIcon size={18} />
         {t('dashboard')}
       </NavLink>
       <NavLink to="/admin/fleet" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        <MapIcon size={18} />
         {t('navFleetMap')}
       </NavLink>
       <NavLink to="/admin/routes" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        <RouteIcon size={18} />
         {t('navRouteManager')}
       </NavLink>
       <NavLink to="/admin/reports" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        <ReportIcon size={18} />
         {t('navReports')}
       </NavLink>
       <NavLink to="/admin/alerts" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        <AlertIcon size={18} />
         {t('navAlerts')}
       </NavLink>
       <NavLink to="/admin/staff" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        <StaffIcon size={18} />
         Staff Directory & Locations
       </NavLink>
     </aside>

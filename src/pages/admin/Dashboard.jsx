@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { ROUTES } from '../../simulation/routes';
 import { VEHICLES, getFleetEmissionsSummary, VEHICLE_STATUS } from '../../simulation/vehicles';
 import MapView from '../../components/MapView';
+import { BusIcon, OnTimeIcon, SignalLostIcon, CleanFleetIcon, MapIcon, AlertIcon, StaffIcon } from '../../components/Icon';
 
 export default function Dashboard() {
 const { busStates, anomalyLog, reportBreakdown, resolveAnomaly } = useSimulation();
@@ -67,10 +68,12 @@ return (
         Super Admin Override Hub — Real-Time Fleet Feed, Driver & Conductor Dispatch Oversight
       </p>
       <div className="flex flex--gap-2" style={{ marginTop: 'var(--space-3)' }}>
-        <button className="btn btn--primary btn--sm" onClick={() => navigate('/admin/staff')}>
+        <button className="btn btn--primary btn--sm flex flex--align-center flex--gap-2" onClick={() => navigate('/admin/staff')}>
+          <StaffIcon size={16} />
           Staff Directory & Locations
         </button>
-        <button className="btn btn--outline btn--sm" onClick={() => navigate('/admin/fleet')}>
+        <button className="btn btn--outline btn--sm flex flex--align-center flex--gap-2" onClick={() => navigate('/admin/fleet')}>
+          <MapIcon size={16} />
           Fleet Map
         </button>
       </div>
@@ -79,22 +82,30 @@ return (
     {/* Stat cards */}
     <div className="grid grid--4 mb-6">
       <div className="stat-card">
-        <div className="stat-card__icon stat-card__icon--info"></div>
+        <div className="stat-card__icon stat-card__icon--info">
+          <BusIcon size={20} color="var(--color-info)" />
+        </div>
         <div className="stat-card__label">{t('totalBuses')}</div>
         <div className="stat-card__value stat-card__value--info">{stats.total}</div>
       </div>
       <div className="stat-card">
-        <div className="stat-card__icon stat-card__icon--success"></div>
+        <div className="stat-card__icon stat-card__icon--success">
+          <OnTimeIcon size={20} color="var(--color-success)" />
+        </div>
         <div className="stat-card__label">{t('onTimePerformance')}</div>
         <div className="stat-card__value stat-card__value--success">{stats.onTime}%</div>
       </div>
       <div className="stat-card">
-        <div className="stat-card__icon stat-card__icon--warning"></div>
+        <div className="stat-card__icon stat-card__icon--warning">
+          <SignalLostIcon size={20} color="var(--color-warning)" />
+        </div>
         <div className="stat-card__label">{t('signalLostCount')}</div>
         <div className="stat-card__value stat-card__value--warning">{stats.signalLost}</div>
       </div>
       <div className="stat-card">
-        <div className="stat-card__icon stat-card__icon--success"></div>
+        <div className="stat-card__icon stat-card__icon--success">
+          <CleanFleetIcon size={20} color="var(--color-success)" />
+        </div>
         <div className="stat-card__label">{t('cleanFleetPercent')}</div>
         <div className="stat-card__value stat-card__value--success">{emissionsSummary.cleanPercentage}%</div>
       </div>
@@ -105,7 +116,10 @@ return (
       {/* Mini fleet map */}
       <div className="card">
         <div className="card__header">
-          <span className="card__title"> Live Fleet Tracking Map</span>
+          <span className="card__title flex flex--align-center flex--gap-2">
+            <MapIcon size={18} color="var(--color-accent)" />
+            Live Fleet Tracking Map
+          </span>
           <button className="btn btn--outline btn--sm" onClick={() => navigate('/admin/fleet')}>
             Full Screen Map →
           </button>
@@ -123,7 +137,10 @@ return (
       {/* Recent alerts */}
       <div className="card">
         <div className="card__header">
-          <span className="card__title"> Real-Time Anomaly & Emergency Alerts</span>
+          <span className="card__title flex flex--align-center flex--gap-2">
+            <AlertIcon size={18} color="var(--color-warning)" />
+            Real-Time Anomaly & Emergency Alerts
+          </span>
           <button className="btn btn--outline btn--sm" onClick={() => navigate('/admin/alerts')}>
             View All Alerts →
           </button>
