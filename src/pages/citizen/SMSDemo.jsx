@@ -39,7 +39,7 @@ const handleSend = () => {
       const nextEta = bs?.etas?.[0];
 
       let response = `HRTC Live Telemetry Feed\n`;
-      response += `Bus: ${targetBus.busNumber} (${targetBus.registrationNo})\n`;
+      response += `Bus: ${targetBus.registrationNo} (${targetBus.busNumber})\n`;
       response += `Driver: ${targetBus.driver?.name} (${targetBus.driver?.phone})\n`;
       if (targetBus.driver?.conductor) {
         response += `Conductor: ${targetBus.driver.conductor.name} (${targetBus.driver.conductor.phone})\n`;
@@ -91,7 +91,7 @@ const handleSend = () => {
     let response = `HRTC Info - ${stop.name}\nStop Code: ${stop.code}\n\n`;
     top3.forEach((b, i) => {
       const conf = b.eta.confidence === 'live' ? '[Live]' : '[Est]';
-      response += `${i + 1}. ${b.vehicle.busNumber} (${b.vehicle.registrationNo}) · Rte ${b.route.routeNo}\n`;
+      response += `${i + 1}. ${b.vehicle.registrationNo} (${b.vehicle.busNumber}) · Rte ${b.route.routeNo}\n`;
       response += ` Driver: ${b.vehicle.driver?.name || 'Assigned'} (${b.vehicle.driver?.phone || 'N/A'})\n`;
       if (b.vehicle.driver?.conductor) {
         response += ` Conductor: ${b.vehicle.driver.conductor.name} (${b.vehicle.driver.conductor.phone})\n`;

@@ -487,8 +487,8 @@ return (
             >
               <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: route?.color || 'var(--color-primary)' }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>
-                  {vehicle?.busNumber} ({vehicle?.registrationNo})
+                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-primary)' }}>
+                  {vehicle?.registrationNo} <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>({vehicle?.busNumber})</span>
                 </div>
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
                   Route {route?.routeNo}: {route?.name}
