@@ -115,10 +115,11 @@ function tickBus(busState, isTouristSeason) {
   const waypoints = route.waypoints;
   const totalWp = waypoints.length;
 
-  // Handle breakdown state — bus stays stationary
+  // Handle breakdown state — bus stays stationary (speed = 0)
   if (newState.status === VEHICLE_STATUS.BREAKDOWN) {
+    newState.speed = 0;
     newState.stationaryTicks += 1;
-    if (newState.stationaryTicks > 40) { // ~80s breakdown
+    if (newState.stationaryTicks > 30) { // ~60s breakdown
       newState.status = VEHICLE_STATUS.RUNNING;
       newState.anomalyType = null;
       newState.stationaryTicks = 0;
@@ -132,22 +133,27 @@ function tickBus(busState, isTouristSeason) {
   const segIdx = Math.min(newState.waypointIdx, speeds.length - 1);
   const routeTargetSpeed = speeds[segIdx] || 40;
 
-  // Check near stop for station approach slowing (within ~60m)
+  // Check near stop for gentle station approach slowing (down to ~25 km/h, never 0)
   const nearStop = route.stops.some(s => {
     const d = Math.sqrt((s.lat - newState.lat) ** 2 + (s.lng - newState.lng) ** 2);
     return d < 0.0006; // ~60m
   });
 
-  const targetSpeed = nearStop ? Math.min(routeTargetSpeed, 20) : routeTargetSpeed;
+  const targetSpeed = nearStop ? Math.max(25, Math.min(routeTargetSpeed, 30)) : routeTargetSpeed;
 
-  // Smooth, realistic speed interpolation with gentle natural variation (±2 km/h)
-  const base = newState.speed > 10 ? newState.speed : targetSpeed;
-  const variation = Math.sin(newState.waypointIdx + Date.now() / 8000) * 2;
-  const currentSpeed = base * 0.75 + (targetSpeed + variation) * 0.25;
+  // Smooth, realistic speed interpolation matching authentic route physics
+  const base = (newState.speed && newState.speed >= 20) ? newState.speed : targetSpeed;
+  const currentSpeed = base * 0.8 + targetSpeed * 0.2;
 
-  // Ensure active running bus stays at a smooth moving speed (minimum 15 km/h)
-  const minSpeed = Math.min(15, targetSpeed);
-  newState.speed = Math.max(minSpeed, Math.round(currentSpeed * 10) / 10);
+  // Enforce authentic realistic moving speed (minimum 20 km/h for running/delayed/signal-lost buses)
+  let finalSpeed = Math.max(20, Math.round(currentSpeed * 10) / 10);
+
+  // If bus is delayed due to traffic/roadwork, move at a realistic slower crawl speed (~75% of route speed), NEVER 0
+  if (newState.status === VEHICLE_STATUS.DELAYED) {
+    finalSpeed = Math.max(18, Math.round(finalSpeed * 0.75 * 10) / 10);
+  }
+
+  newState.speed = finalSpeed;
 
   // Calculate physical distance traveled in this 2s tick (meters)
   const metersPerSec = (newState.speed * 1000) / 3600;
@@ -198,15 +204,6 @@ function tickBus(busState, isTouristSeason) {
   // Update ping time if signal is fine
   if (!newState.isSignalLost) {
     newState.lastPingTime = Date.now();
-  }
-
-  // Check delay status
-  if (newState.speed < 10 && newState.status === VEHICLE_STATUS.RUNNING) {
-    newState.status = VEHICLE_STATUS.DELAYED;
-    newState.delayMinutes = Math.round(5 + Math.random() * 10);
-  } else if (newState.speed >= 10 && newState.status === VEHICLE_STATUS.DELAYED) {
-    newState.status = VEHICLE_STATUS.RUNNING;
-    newState.delayMinutes = 0;
   }
 
   // Compute smooth ETAs for upcoming stops
@@ -298,20 +295,21 @@ export function createSimulation() {
       anomalyLog = [...newEvents, ...anomalyLog].slice(0, 100);
     }
 
-    // Auto-resolve alerts when buses leave tunnel or recover from breakdown
+    // Auto-resolve alerts automatically whenever signal returns or breakdown recovers
     for (const id of Object.keys(newStates)) {
-      const prev = prevStates[id];
       const curr = newStates[id];
-      if (!prev || !curr) continue;
+      if (!curr) continue;
 
-      if (prev.isSignalLost && !curr.isSignalLost) {
+      // When signal returns online, auto-resolve signal loss alert instantly
+      if (!curr.isSignalLost) {
         anomalyLog = anomalyLog.map(a =>
           a.vehicleId === id && a.type === 'signal-lost' && a.status !== 'resolved'
             ? { ...a, status: 'resolved' }
             : a
         );
       }
-      if (prev.status === VEHICLE_STATUS.BREAKDOWN && curr.status !== VEHICLE_STATUS.BREAKDOWN) {
+      // When vehicle is no longer broken down, auto-resolve breakdown alert instantly
+      if (curr.status !== VEHICLE_STATUS.BREAKDOWN) {
         anomalyLog = anomalyLog.map(a =>
           a.vehicleId === id && a.type === 'breakdown' && a.status !== 'resolved'
             ? { ...a, status: 'resolved' }
