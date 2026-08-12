@@ -3,7 +3,7 @@ import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function Alerts() {
-const { anomalyLog, acknowledgeAlert, resolveAlert } = useSimulation();
+const { anomalyLog, acknowledgeAlert, resolveAlert, resolveAllAlerts } = useSimulation();
 const { t } = useLanguage();
 const [filterStatus, setFilterStatus] = useState('all');
 const [filterType, setFilterType] = useState('all');
@@ -23,7 +23,12 @@ const counts = {
 
 return (
   <div>
-    <h1 className="page-title"> {t('navAlerts')}</h1>
+    <div className="flex flex--between flex--align-center mb-4">
+      <h1 className="page-title" style={{ margin: 0 }}> {t('navAlerts')}</h1>
+      <button className="btn btn--outline btn--sm" onClick={resolveAllAlerts}>
+        Auto-Resolve All Alerts
+      </button>
+    </div>
 
     {/* Summary cards */}
     <div className="grid grid--4 mb-6">

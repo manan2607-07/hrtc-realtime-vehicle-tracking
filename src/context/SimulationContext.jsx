@@ -45,6 +45,10 @@ export function SimulationProvider({ children }) {
     simRef.current?.resolveAlert(alertId);
   }, []);
 
+  const resolveAllAlerts = useCallback(() => {
+    simRef.current?.resolveAllAlerts();
+  }, []);
+
   const addNotification = useCallback((notification) => {
     const id = `notif-${Date.now()}`;
     const notif = { id, ...notification, timestamp: Date.now() };
@@ -137,6 +141,7 @@ export function SimulationProvider({ children }) {
       toggleTouristSeason,
       acknowledgeAlert,
       resolveAlert,
+      resolveAllAlerts,
       notifications,
       addNotification,
       dismissNotification,

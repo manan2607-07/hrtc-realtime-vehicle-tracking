@@ -8,7 +8,7 @@ import MapView from '../../components/MapView';
 import { BusIcon, OnTimeIcon, SignalLostIcon, CleanFleetIcon, MapIcon, AlertIcon, StaffIcon } from '../../components/Icon';
 
 export default function Dashboard() {
-const { busStates, anomalyLog, reportBreakdown, resolveAnomaly } = useSimulation();
+const { busStates, anomalyLog, reportBreakdown, resolveAnomaly, resolveAllAlerts } = useSimulation();
 const { t } = useLanguage();
 const navigate = useNavigate();
 
@@ -155,9 +155,14 @@ return (
             <AlertIcon size={18} color="var(--color-warning)" />
             Real-Time Anomaly & Emergency Alerts
           </span>
-          <button className="btn btn--outline btn--sm" onClick={() => navigate('/admin/alerts')}>
-            View All Alerts →
-          </button>
+          <div className="flex flex--gap-2">
+            <button className="btn btn--outline btn--sm" onClick={resolveAllAlerts}>
+              Auto-Resolve All
+            </button>
+            <button className="btn btn--outline btn--sm" onClick={() => navigate('/admin/alerts')}>
+              View All Alerts →
+            </button>
+          </div>
         </div>
         <div className="card__body">
           {recentAlerts.length === 0 ? (

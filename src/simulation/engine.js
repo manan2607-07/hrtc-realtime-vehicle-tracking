@@ -322,6 +322,19 @@ export function createSimulation() {
       }
     }
 
+    // Auto-resolve any active alert older than 15 seconds
+    const AUTO_RESOLVE_MS = 15000;
+    const nowMs = Date.now();
+    anomalyLog = anomalyLog.map(a => {
+      if (a.status !== 'resolved' && a.timestamp) {
+        const age = nowMs - new Date(a.timestamp).getTime();
+        if (age > AUTO_RESOLVE_MS) {
+          return { ...a, status: 'resolved' };
+        }
+      }
+      return a;
+    });
+
     busStates = newStates;
 
     listeners.forEach(fn => fn({
@@ -380,6 +393,10 @@ export function createSimulation() {
       anomalyLog = anomalyLog.map(a =>
         a.id === alertId ? { ...a, status: 'resolved' } : a
       );
+    },
+
+    resolveAllAlerts() {
+      anomalyLog = anomalyLog.map(a => ({ ...a, status: 'resolved' }));
     },
 
     updateRealGps(vehicleId, { lat, lng, speed, heading }) {
