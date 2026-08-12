@@ -152,8 +152,6 @@ export default function StaffLogin() {
         </div>
       )}
 
-
-
       <div className="login-page__footer">
         <p>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</p>
         <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>Unauthorized access is a punishable offence under IT Act 2000</p>
