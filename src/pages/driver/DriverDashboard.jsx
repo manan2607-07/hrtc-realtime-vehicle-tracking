@@ -39,18 +39,25 @@ export default function DriverDashboard() {
   }
 
   // Calculate live accurate GPS-tracked speed
-  const baseSpeed = busState?.speed || 0;
-  const currentSpeed = Math.round(baseSpeed > 0 ? baseSpeed : (isBroadcasting || busState?.status === 'running' ? 36 : 0));
+  const baseSpeed = busState?.speed;
+  const currentSpeed = Math.round(
+    typeof baseSpeed === 'number' && baseSpeed >= 0
+      ? baseSpeed
+      : (route?.segmentSpeeds?.normal?.[0] || 35)
+  );
 
   // Speed Status Evaluation
   let speedColor = 'var(--color-success)';
   let speedStatusLabel = 'Normal Cruising Speed';
   if (currentSpeed === 0) {
     speedColor = 'var(--color-warning)';
-    speedStatusLabel = 'Bus Stopped / Idle';
-  } else if (currentSpeed > 60) {
+    speedStatusLabel = 'Bus Stopped / Station Dwell';
+  } else if (currentSpeed < 18) {
+    speedColor = '#3498db';
+    speedStatusLabel = 'Station Approach Speed';
+  } else if (currentSpeed > 75) {
     speedColor = 'var(--color-danger)';
-    speedStatusLabel = 'Over Speeding Warning!';
+    speedStatusLabel = 'Express High Speed';
   }
 
   // Start Route & Open Google Maps with all route stops included
