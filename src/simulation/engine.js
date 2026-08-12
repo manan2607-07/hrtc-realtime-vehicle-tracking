@@ -130,29 +130,24 @@ function tickBus(busState, isTouristSeason) {
   const seasonKey = isTouristSeason ? 'touristSeason' : 'normal';
   const speeds = route.segmentSpeeds[seasonKey];
   const segIdx = Math.min(newState.waypointIdx, speeds.length - 1);
-  const targetSpeed = speeds[segIdx] || 40;
+  const routeTargetSpeed = speeds[segIdx] || 40;
 
-  // Check near stop for actual dwell time (within ~50m)
+  // Check near stop for station approach slowing (within ~60m)
   const nearStop = route.stops.some(s => {
     const d = Math.sqrt((s.lat - newState.lat) ** 2 + (s.lng - newState.lng) ** 2);
-    return d < 0.0005; // ~50m
+    return d < 0.0006; // ~60m
   });
 
-  let currentSpeed;
-  if (nearStop && newState.stationaryTicks < 2) {
-    currentSpeed = 0; // Bus at stop / passenger dwell
-    newState.stationaryTicks += 1;
-  } else {
-    if (newState.stationaryTicks >= 2) {
-      newState.stationaryTicks = 0;
-    }
-    // Smooth, realistic speed interpolation with gentle natural variation (±3 km/h)
-    const base = newState.speed > 10 ? newState.speed : targetSpeed;
-    const variation = Math.sin(newState.waypointIdx + Date.now() / 8000) * 3;
-    currentSpeed = base * 0.7 + (targetSpeed + variation) * 0.3;
-  }
+  const targetSpeed = nearStop ? Math.min(routeTargetSpeed, 20) : routeTargetSpeed;
 
-  newState.speed = Math.max(0, Math.round(currentSpeed * 10) / 10);
+  // Smooth, realistic speed interpolation with gentle natural variation (±2 km/h)
+  const base = newState.speed > 10 ? newState.speed : targetSpeed;
+  const variation = Math.sin(newState.waypointIdx + Date.now() / 8000) * 2;
+  const currentSpeed = base * 0.75 + (targetSpeed + variation) * 0.25;
+
+  // Ensure active running bus stays at a smooth moving speed (minimum 15 km/h)
+  const minSpeed = Math.min(15, targetSpeed);
+  newState.speed = Math.max(minSpeed, Math.round(currentSpeed * 10) / 10);
 
   // Calculate physical distance traveled in this 2s tick (meters)
   const metersPerSec = (newState.speed * 1000) / 3600;
