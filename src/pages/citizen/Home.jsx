@@ -357,10 +357,10 @@ return (
                 <div className="card__header flex flex--between flex--align-center">
                   <div>
                     <span style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', color: 'var(--color-primary)' }}>
-                      {vehicle.busNumber}
+                      {vehicle.registrationNo}
                     </span>
                     <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginLeft: '8px' }}>
-                      ({vehicle.registrationNo})
+                      ({vehicle.busNumber})
                     </span>
                   </div>
                   {busState?.status && (

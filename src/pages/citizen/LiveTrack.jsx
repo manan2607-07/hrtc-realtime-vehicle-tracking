@@ -102,9 +102,9 @@ return (
           }}>
             Route {route.routeNo}
           </span>
-          <span style={{ color: 'var(--color-primary)' }}>{vehicle.busNumber}</span>
+          <span style={{ color: 'var(--color-primary)', fontWeight: 800 }}>{vehicle.registrationNo}</span>
           <span style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-            ({vehicle.registrationNo})
+            ({vehicle.busNumber})
           </span>
         </h1>
         <div className="flex flex--gap-2 flex--wrap mt-4" style={{ marginTop: 'var(--space-2)' }}>

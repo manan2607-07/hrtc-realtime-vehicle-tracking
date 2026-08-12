@@ -155,7 +155,9 @@ return (
                     style={{ padding: 'var(--space-3)' }}
                   >
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>{vehicle?.registrationNo}</div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-primary)' }}>
+                        {vehicle?.registrationNo} <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>({vehicle?.busNumber})</span>
+                      </div>
                       <div className="flex flex--gap-2 flex--wrap" style={{ marginTop: 'var(--space-1)' }}>
                         <SustainabilityBadge fuelType={vehicle?.fuelType} emissionStandard={vehicle?.emissionStandard} />
                         <span className={`badge badge--${bs.status}`} style={{ fontSize: 'var(--font-size-xs)' }}>

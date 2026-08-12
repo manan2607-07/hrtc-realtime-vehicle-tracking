@@ -125,7 +125,9 @@ return (
               {bus.route?.routeNo || '?'}
             </div>
             <div className="bus-item__info">
-              <div className="bus-item__reg">{bus.vehicle?.registrationNo}</div>
+              <div className="bus-item__reg" style={{ fontWeight: 700 }}>
+                {bus.vehicle?.registrationNo} <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>({bus.vehicle?.busNumber})</span>
+              </div>
               <div className="bus-item__route-name">
                 {bus.route?.name} — {bus.direction > 0 ? bus.route?.destination : bus.route?.origin}
               </div>
