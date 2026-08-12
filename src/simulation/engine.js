@@ -50,7 +50,7 @@ function checkSignalLoss(route, wpIdx) {
   if (!route.signalLossZones) return false;
   for (const zone of route.signalLossZones) {
     if (wpIdx >= zone.startIdx && wpIdx <= zone.endIdx) {
-      return Math.random() < zone.probability;
+      return true;
     }
   }
   return false;
@@ -230,6 +230,7 @@ function generateAnomalyEvents(prevStates, newStates) {
     if (!prev || !curr) continue;
 
     const vehicle = VEHICLES.find(v => v.id === id);
+    const route = ROUTES.find(r => r.id === curr.routeId);
 
     // Breakdown event
     if (prev.status !== VEHICLE_STATUS.BREAKDOWN && curr.status === VEHICLE_STATUS.BREAKDOWN) {
@@ -239,7 +240,7 @@ function generateAnomalyEvents(prevStates, newStates) {
         vehicleId: id,
         registrationNo: vehicle?.registrationNo,
         routeId: curr.routeId,
-        message: `Bus ${vehicle?.busNumber} (${vehicle?.registrationNo}) stationary (suspected breakdown)`,
+        message: `${vehicle?.busNumber} (${vehicle?.registrationNo}) stationary (suspected breakdown)`,
         lat: curr.lat,
         lng: curr.lng,
         timestamp: now.toISOString(),
@@ -249,13 +250,14 @@ function generateAnomalyEvents(prevStates, newStates) {
 
     // Signal lost event
     if (!prev.isSignalLost && curr.isSignalLost) {
+      const zoneLabel = route?.signalLossZones?.find(z => curr.waypointIdx >= z.startIdx && curr.waypointIdx <= z.endIdx)?.label || 'tunnel/valley zone';
       events.push({
         id: `alert-${Date.now()}-${id}-sig`,
         type: 'signal-lost',
         vehicleId: id,
         registrationNo: vehicle?.registrationNo,
         routeId: curr.routeId,
-        message: `Signal lost for Bus ${vehicle?.busNumber} (${vehicle?.registrationNo}) in tunnel/valley zone`,
+        message: `Signal lost for ${vehicle?.busNumber} (${vehicle?.registrationNo}) in ${zoneLabel}`,
         lat: curr.lat,
         lng: curr.lng,
         timestamp: now.toISOString(),
@@ -278,30 +280,7 @@ export function createSimulation() {
   }
 
   let busStates = initBusStates();
-  let anomalyLog = [
-    {
-      id: 'alert-seed-1',
-      type: 'breakdown',
-      vehicleId: 'bus-010',
-      registrationNo: 'HP-26-A-5566',
-      routeId: 'route-2',
-      message: 'Bus Bus #205 (HP-26-A-5566) stationary for 18 min at km 145',
-      lat: 31.4500, lng: 76.8400,
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      status: 'resolved',
-    },
-    {
-      id: 'alert-seed-2',
-      type: 'signal-lost',
-      vehicleId: 'bus-007',
-      registrationNo: 'HP-01-G-6789',
-      routeId: 'route-2',
-      message: 'Bus Bus #202 (HP-01-G-6789) signal lost in Pandoh tunnel zone',
-      lat: 31.7045, lng: 77.0510,
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      status: 'resolved',
-    },
-  ];
+  let anomalyLog = [];
   let listeners = [];
   let tickTimer = null;
   let isTouristSeason = false;
@@ -319,6 +298,28 @@ export function createSimulation() {
     const newEvents = generateAnomalyEvents(prevStates, newStates);
     if (newEvents.length > 0) {
       anomalyLog = [...newEvents, ...anomalyLog].slice(0, 100);
+    }
+
+    // Auto-resolve alerts when buses leave tunnel or recover from breakdown
+    for (const id of Object.keys(newStates)) {
+      const prev = prevStates[id];
+      const curr = newStates[id];
+      if (!prev || !curr) continue;
+
+      if (prev.isSignalLost && !curr.isSignalLost) {
+        anomalyLog = anomalyLog.map(a =>
+          a.vehicleId === id && a.type === 'signal-lost' && a.status !== 'resolved'
+            ? { ...a, status: 'resolved' }
+            : a
+        );
+      }
+      if (prev.status === VEHICLE_STATUS.BREAKDOWN && curr.status !== VEHICLE_STATUS.BREAKDOWN) {
+        anomalyLog = anomalyLog.map(a =>
+          a.vehicleId === id && a.type === 'breakdown' && a.status !== 'resolved'
+            ? { ...a, status: 'resolved' }
+            : a
+        );
+      }
     }
 
     busStates = newStates;
