@@ -34,10 +34,10 @@ import ConductorDashboard from './pages/conductor/ConductorDashboard';
  ROUTE GUARD — redirects to /login if role doesn't match
  ================================================================ */
 function RequireRole({ allowedRoles, children }) {
-  const { session } = useAuth();
-  if (!session) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
-  return children || <Outlet />;
+const { session } = useAuth();
+if (!session) return <Navigate to="/login" replace />;
+if (!allowedRoles.includes(session.role)) return <Navigate to="/login" replace />;
+return children || <Outlet />;
 }
 
 /* ================================================================
@@ -49,76 +49,76 @@ const { logout, role } = useAuth();
 const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
 return (
-  <div className="app-layout">
-    <header className="app-header">
-      <Link to="/" className="app-header__logo">
-        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
-        <div>
-          <div className="app-header__title">{t('appName')}</div>
-          <div className="app-header__subtitle">{t('appSubtitle')}</div>
-        </div>
-      </Link>
+<div className="app-layout">
+  <header className="app-header">
+    <Link to="/" className="app-header__logo">
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
+      <div>
+        <div className="app-header__title">{t('appName')}</div>
+        <div className="app-header__subtitle">{t('appSubtitle')}</div>
+      </div>
+    </Link>
 
-      <nav className="app-header__nav">
-        <NavLink to="/" end className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
-          {t('navHome')}
+    <nav className="app-header__nav">
+      <NavLink to="/" end className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
+        {t('navHome')}
+      </NavLink>
+      <NavLink to="/sms" className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
+        {t('navSMS')}
+      </NavLink>
+    </nav>
+
+    <div className="app-header__actions">
+      <LanguageToggle />
+    </div>
+
+    <button className="mobile-nav-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} aria-label="Menu">
+      {mobileNavOpen ? 'X' : 'Menu'}
+    </button>
+  </header>
+
+  {mobileNavOpen && (
+    <>
+      <div className="mobile-nav-overlay" onClick={() => setMobileNavOpen(false)} />
+      <div className="mobile-nav-panel">
+        <NavLink to="/" end className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
+           {t('navHome')}
         </NavLink>
-        <NavLink to="/sms" className={({isActive}) => `app-header__nav-link ${isActive ? 'active' : ''}`}>
-          {t('navSMS')}
+        <NavLink to="/sms" className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
+           {t('navSMS')}
         </NavLink>
-      </nav>
-
-      <div className="app-header__actions">
-        <LanguageToggle />
-      </div>
-
-      <button className="mobile-nav-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} aria-label="Menu">
-        {mobileNavOpen ? 'X' : 'Menu'}
-      </button>
-    </header>
-
-    {mobileNavOpen && (
-      <>
-        <div className="mobile-nav-overlay" onClick={() => setMobileNavOpen(false)} />
-        <div className="mobile-nav-panel">
-          <NavLink to="/" end className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
-             {t('navHome')}
-          </NavLink>
-          <NavLink to="/sms" className="app-header__nav-link" onClick={() => setMobileNavOpen(false)}>
-             {t('navSMS')}
-          </NavLink>
-          <div style={{ marginTop: 'auto', padding: 'var(--space-3)' }}>
-            <LanguageToggle />
-          </div>
+        <div style={{ marginTop: 'auto', padding: 'var(--space-3)' }}>
+          <LanguageToggle />
         </div>
-      </>
-    )}
-
-    <main className="app-main">
-      <Outlet />
-    </main>
-
-    <footer style={{
-      marginTop: 'var(--space-8)',
-      padding: 'var(--space-6) var(--space-4)',
-      borderTop: '1px solid var(--color-border)',
-      background: 'var(--color-surface)',
-      textAlign: 'center',
-      fontSize: 'var(--font-size-xs)',
-      color: 'var(--color-text-secondary)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-        <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Himachal Road Transport Corporation</span>
       </div>
-      <div>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</div>
-      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-        Official Real-Time Passenger Telemetry & Vehicle Tracking System · Government of Himachal Pradesh
-      </div>
-    </footer>
+    </>
+  )}
 
-    <ToastContainer />
-  </div>
+  <main className="app-main">
+    <Outlet />
+  </main>
+
+  <footer style={{
+    marginTop: 'var(--space-8)',
+    padding: 'var(--space-6) var(--space-4)',
+    borderTop: '1px solid var(--color-border)',
+    background: 'var(--color-surface)',
+    textAlign: 'center',
+    fontSize: 'var(--font-size-xs)',
+    color: 'var(--color-text-secondary)',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+      <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Himachal Road Transport Corporation</span>
+    </div>
+    <div>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</div>
+    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+      Official Real-Time Passenger Telemetry & Vehicle Tracking System · Government of Himachal Pradesh
+    </div>
+  </footer>
+
+  <ToastContainer />
+</div>
 );
 }
 
@@ -130,64 +130,58 @@ const { t } = useLanguage();
 const { logout, session } = useAuth();
 
 return (
-  <div className="admin-layout">
-    <header className="admin-header">
-      <Link to="/admin" className="app-header__logo" style={{ textDecoration: 'none' }}>
-        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
-        <div>
-          <div className="app-header__title">HRTC {t('navAdmin')}</div>
-          <div className="app-header__subtitle">Logged in as: {session?.username}</div>
-        </div>
-      </Link>
-
-      <nav className="app-header__nav">
-        <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-           Logout
-        </button>
-      </nav>
-
-      <div className="app-header__actions">
-        <LanguageToggle />
+<div className="admin-layout">
+  <header className="admin-header">
+    <Link to="/admin" className="app-header__logo" style={{ textDecoration: 'none' }}>
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
+      <div>
+        <div className="app-header__title">HRTC {t('navAdmin')}</div>
+        <div className="app-header__subtitle">Logged in as: {session?.username}</div>
       </div>
+    </Link>
 
-      <button className="mobile-nav-toggle" aria-label="Menu">Menu</button>
-    </header>
+    <nav className="app-header__nav">
+      <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+         Logout
+      </button>
+    </nav>
 
-    <div className="admin-body">
-      <aside className="admin-sidebar">
-        <NavLink to="/admin" end className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">📊</span>
-          {t('dashboard')}
-        </NavLink>
-        <NavLink to="/admin/fleet" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">📡</span>
-          {t('navFleetMap')}
-        </NavLink>
-        <NavLink to="/admin/routes" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">🛣️</span>
-          {t('navRouteManager')}
-        </NavLink>
-        <NavLink to="/admin/reports" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">📈</span>
-          {t('navReports')}
-        </NavLink>
-        <NavLink to="/admin/alerts" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">🚨</span>
-          {t('navAlerts')}
-        </NavLink>
-        <NavLink to="/admin/staff" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
-          <span className="admin-sidebar__link-icon">👨‍✈️</span>
-          Staff Directory & Locations
-        </NavLink>
-      </aside>
-
-      <main className="admin-main">
-        <Outlet />
-      </main>
+    <div className="app-header__actions">
+      <LanguageToggle />
     </div>
 
-    <ToastContainer />
+    <button className="mobile-nav-toggle" aria-label="Menu">Menu</button>
+  </header>
+
+  <div className="admin-body">
+    <aside className="admin-sidebar">
+      <NavLink to="/admin" end className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        {t('dashboard')}
+      </NavLink>
+      <NavLink to="/admin/fleet" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        {t('navFleetMap')}
+      </NavLink>
+      <NavLink to="/admin/routes" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        {t('navRouteManager')}
+      </NavLink>
+      <NavLink to="/admin/reports" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        {t('navReports')}
+      </NavLink>
+      <NavLink to="/admin/alerts" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        {t('navAlerts')}
+      </NavLink>
+      <NavLink to="/admin/staff" className={({isActive}) => `admin-sidebar__link ${isActive ? 'active' : ''}`}>
+        Staff Directory & Locations
+      </NavLink>
+    </aside>
+
+    <main className="admin-main">
+      <Outlet />
+    </main>
   </div>
+
+  <ToastContainer />
+</div>
 );
 }
 
@@ -198,26 +192,26 @@ function DriverLayout() {
 const { logout, session } = useAuth();
 
 return (
-  <div className="app-layout">
-    <header className="app-header">
-      <Link to="/driver" className="app-header__logo">
-        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
-        <div>
-          <div className="app-header__title">HRTC Driver Panel</div>
-          <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
-        </div>
-      </Link>
-      <nav className="app-header__nav">
-        <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-           Logout
-        </button>
-      </nav>
-    </header>
-    <main className="app-main">
-      <Outlet />
-    </main>
-    <ToastContainer />
-  </div>
+<div className="app-layout">
+  <header className="app-header">
+    <Link to="/driver" className="app-header__logo">
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
+      <div>
+        <div className="app-header__title">HRTC Driver Panel</div>
+        <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
+      </div>
+    </Link>
+    <nav className="app-header__nav">
+      <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+         Logout
+      </button>
+    </nav>
+  </header>
+  <main className="app-main">
+    <Outlet />
+  </main>
+  <ToastContainer />
+</div>
 );
 }
 
@@ -228,26 +222,26 @@ function ConductorLayout() {
 const { logout, session } = useAuth();
 
 return (
-  <div className="app-layout">
-    <header className="app-header">
-      <Link to="/conductor" className="app-header__logo">
-        <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
-        <div>
-          <div className="app-header__title">HRTC Conductor Panel</div>
-          <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
-        </div>
-      </Link>
-      <nav className="app-header__nav">
-        <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-           Logout
-        </button>
-      </nav>
-    </header>
-    <main className="app-main">
-      <Outlet />
-    </main>
-    <ToastContainer />
-  </div>
+<div className="app-layout">
+  <header className="app-header">
+    <Link to="/conductor" className="app-header__logo">
+      <img src="/hrtc-logo.svg" alt="HRTC Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
+      <div>
+        <div className="app-header__title">HRTC Conductor Panel</div>
+        <div className="app-header__subtitle">{session?.name} — {session?.busNumber}</div>
+      </div>
+    </Link>
+    <nav className="app-header__nav">
+      <button className="app-header__nav-link" onClick={logout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+         Logout
+      </button>
+    </nav>
+  </header>
+  <main className="app-main">
+    <Outlet />
+  </main>
+  <ToastContainer />
+</div>
 );
 }
 
@@ -255,74 +249,74 @@ return (
  APP ROOT
  ================================================================ */
 export default function App() {
-  useEffect(() => {
-    let link = document.querySelector("link[rel*='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.getElementsByTagName('head')[0].appendChild(link);
-    }
-    link.type = 'image/svg+xml';
-    link.href = '/hrtc-logo.svg';
-  }, []);
+useEffect(() => {
+  let link = document.querySelector("link[rel*='icon']");
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.getElementsByTagName('head')[0].appendChild(link);
+  }
+  link.type = 'image/svg+xml';
+  link.href = '/hrtc-logo.svg';
+}, []);
 
-  return (
-  <LanguageProvider>
-    <SimulationProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public passenger entry */}
-            <Route path="/login" element={<RoleLogin />} />
-            {/* Staff-only login — Driver & Conductor */}
-            <Route path="/staff" element={<StaffLogin />} />
-            {/* Dedicated Admin Portal — HRTC Officers & Admins */}
-            <Route path="/admin-portal" element={<AdminLogin />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
+return (
+<LanguageProvider>
+  <SimulationProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public passenger entry */}
+          <Route path="/login" element={<RoleLogin />} />
+          {/* Staff-only login — Driver & Conductor */}
+          <Route path="/staff" element={<StaffLogin />} />
+          {/* Dedicated Admin Portal — HRTC Officers & Admins */}
+          <Route path="/admin-portal" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
-            {/* Customer routes — restricted to 'customer' role */}
-            <Route element={<RequireRole allowedRoles={['customer']} />}>
-              <Route element={<CitizenLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/track/:busId" element={<LiveTrack />} />
-                <Route path="/stop/:stopId" element={<StopDetail />} />
-                <Route path="/route/:routeId" element={<RouteDetail />} />
-                <Route path="/sms" element={<SMSDemo />} />
-              </Route>
+          {/* Customer routes — restricted to 'customer' role */}
+          <Route element={<RequireRole allowedRoles={['customer']} />}>
+            <Route element={<CitizenLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/track/:busId" element={<LiveTrack />} />
+              <Route path="/stop/:stopId" element={<StopDetail />} />
+              <Route path="/route/:routeId" element={<RouteDetail />} />
+              <Route path="/sms" element={<SMSDemo />} />
             </Route>
+          </Route>
 
-            {/* Driver routes — restricted to 'driver' role */}
-            <Route element={<RequireRole allowedRoles={['driver']} />}>
-              <Route path="/driver" element={<DriverLayout />}>
-                <Route index element={<DriverDashboard />} />
-              </Route>
+          {/* Driver routes — restricted to 'driver' role */}
+          <Route element={<RequireRole allowedRoles={['driver']} />}>
+            <Route path="/driver" element={<DriverLayout />}>
+              <Route index element={<DriverDashboard />} />
             </Route>
+          </Route>
 
-            {/* Conductor routes — restricted to 'conductor' role */}
-            <Route element={<RequireRole allowedRoles={['conductor']} />}>
-              <Route path="/conductor" element={<ConductorLayout />}>
-                <Route index element={<ConductorDashboard />} />
-              </Route>
+          {/* Conductor routes — restricted to 'conductor' role */}
+          <Route element={<RequireRole allowedRoles={['conductor']} />}>
+            <Route path="/conductor" element={<ConductorLayout />}>
+              <Route index element={<ConductorDashboard />} />
             </Route>
+          </Route>
 
-            {/* Admin routes — restricted to 'admin' role */}
-            <Route element={<RequireRole allowedRoles={['admin']} />}>
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="fleet" element={<FleetMap />} />
-                <Route path="routes" element={<RouteManager />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="alerts" element={<Alerts />} />
-                <Route path="staff" element={<StaffRoster />} />
-              </Route>
+          {/* Admin routes — restricted to 'admin' role */}
+          <Route element={<RequireRole allowedRoles={['admin']} />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="fleet" element={<FleetMap />} />
+              <Route path="routes" element={<RouteManager />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="alerts" element={<Alerts />} />
+              <Route path="staff" element={<StaffRoster />} />
             </Route>
+          </Route>
 
-            {/* Catch-all: redirect to login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </SimulationProvider>
-  </LanguageProvider>
+          {/* Catch-all: redirect to login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  </SimulationProvider>
+</LanguageProvider>
 );
 }
