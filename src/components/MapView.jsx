@@ -170,7 +170,7 @@ useEffect(() => {
       : 'bus-marker-icon--running';
 
     const isSelected = bus.id === selectedBusId;
-    const busNum = bus.busNumber ? bus.busNumber.replace('Bus #', '') : (bus.id ? bus.id.replace('bus-', '') : '');
+    const busNum = bus.registrationNo || (bus.busNumber ? bus.busNumber.replace('Bus #', '') : (bus.id ? bus.id.replace('bus-', '') : ''));
 
     const iconHtml = `
       <div class="bus-marker-container ${statusClass} ${isSelected ? 'bus-marker-container--selected' : ''}">
@@ -186,8 +186,8 @@ useEffect(() => {
     const icon = L.divIcon({
       className: 'bus-marker-wrapper',
       html: iconHtml,
-      iconSize: [40, 48],
-      iconAnchor: [20, 24],
+      iconSize: [90, 52],
+      iconAnchor: [45, 24],
     });
 
     const popupHtml = `
