@@ -61,14 +61,12 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex flex--between flex--align-center mb-6">
-        <div>
-          <h1 className="page-title" style={{ margin: 0 }}>HRTC Executive Operations & Live Telemetry Control</h1>
-          <p className="text-muted" style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
-            Super Admin Override Hub — Real-Time Fleet Feed, Driver & Conductor Dispatch Oversight
-          </p>
-        </div>
-        <div className="flex flex--gap-2">
+      <div className="mb-6">
+        <h1 className="page-title" style={{ margin: 0 }}>HRTC Executive Operations & Live Telemetry Control</h1>
+        <p className="text-muted" style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
+          Super Admin Override Hub — Real-Time Fleet Feed, Driver & Conductor Dispatch Oversight
+        </p>
+        <div className="flex flex--gap-2" style={{ marginTop: 'var(--space-3)' }}>
           <button className="btn btn--primary btn--sm" onClick={() => navigate('/admin/staff')}>
             👨‍✈️ Staff Directory & Locations
           </button>
