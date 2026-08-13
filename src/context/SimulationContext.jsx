@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { createSimulation } from '../simulation/engine.js';
 import { fetchAllRouteGeometries } from '../simulation/routeGeometry.js';
+import { INITIAL_INCIDENTS } from '../simulation/incidents.js';
 
 const SimulationContext = createContext(null);
 
@@ -144,6 +145,28 @@ export function SimulationProvider({ children }) {
     });
   }, [addNotification]);
 
+  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
+  const [reroutedRoutes, setReroutedRoutes] = useState({});
+
+  const triggerReroute = useCallback((incidentId, routeId, detourName) => {
+    setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, status: 'rerouted' } : inc));
+    setReroutedRoutes(prev => ({
+      ...prev,
+      [routeId]: {
+        incidentId,
+        detourName,
+        timestamp: Date.now(),
+        active: true,
+      }
+    }));
+
+    addNotification({
+      type: 'warning',
+      title: 'OFFICIAL ROUTE ALTERATION ISSUED BY COMMAND',
+      message: `Route redirected via ${detourName}. Driver, Conductor & Passenger apps synchronized!`,
+    });
+  }, [addNotification]);
+
   return (
     <SimulationContext.Provider value={{
       busStates,
@@ -161,6 +184,9 @@ export function SimulationProvider({ children }) {
       startDriverGpsBroadcast,
       stopDriverGpsBroadcast,
       routeGeometries,
+      incidents,
+      reroutedRoutes,
+      triggerReroute,
     }}>
       {children}
     </SimulationContext.Provider>

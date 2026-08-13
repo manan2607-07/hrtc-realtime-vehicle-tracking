@@ -21,6 +21,7 @@ stops = [], // Array of { id, name, lat, lng, isNext }
 selectedBusId = null,
 onBusClick = null,
 onStopClick = null,
+incidents = [],
 className = 'map-container',
 trackBus = false, // Auto-pan to selected bus
 }) {
@@ -147,6 +148,52 @@ useEffect(() => {
     stopMarkersRef.current[stop.id] = marker;
   });
 }, [stops, onStopClick]);
+
+// Update incident markers
+useEffect(() => {
+  const map = mapInstanceRef.current;
+  if (!map || !incidents || incidents.length === 0) return;
+
+  const incidentMarkers = [];
+  incidents.forEach(inc => {
+    if (!inc.lat || !inc.lng) return;
+    const isRerouted = inc.status === 'rerouted';
+    const bg = isRerouted ? '#16a34a' : inc.severity === 'critical' ? '#dc2626' : '#d97706';
+
+    const iconHtml = `
+      <div style="background: ${bg}; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid white;">
+        HAZARD: ${inc.title.split(' ')[0]} ${isRerouted ? '(REROUTED)' : ''}
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      className: 'incident-marker-wrapper',
+      html: iconHtml,
+      iconAnchor: [30, 10],
+    });
+
+    const m = L.marker([inc.lat, inc.lng], { icon })
+      .addTo(map)
+      .bindPopup(`
+        <div style="font-family: system-ui, sans-serif; min-width: 180px;">
+          <div style="font-weight: 700; font-size: 12px; color: ${bg}; margin-bottom: 2px;">
+            ${inc.title}
+          </div>
+          <div style="font-size: 11px; color: #334155; margin-bottom: 4px;">
+            ${inc.description}
+          </div>
+          <div style="font-size: 10px; color: #64748b;">
+            Location: ${inc.location}
+          </div>
+        </div>
+      `);
+    incidentMarkers.push(m);
+  });
+
+  return () => {
+    incidentMarkers.forEach(m => map.removeLayer(m));
+  };
+}, [incidents]);
 
 // Update bus markers
 useEffect(() => {

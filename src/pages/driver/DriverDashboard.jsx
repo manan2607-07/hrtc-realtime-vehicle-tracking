@@ -10,7 +10,7 @@ import ETABadge from '../../components/ETABadge';
 
 export default function DriverDashboard() {
   const { session } = useAuth();
-  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast, routeGeometries } = useSimulation();
+  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast, routeGeometries, incidents, reroutedRoutes } = useSimulation();
   const { t } = useLanguage();
   const [showSOS, setShowSOS] = useState(false);
 
@@ -150,6 +150,33 @@ export default function DriverDashboard() {
             )}
           </div>
         </div>
+
+        {/* Driver Command Reroute & Incident Notice Banner */}
+        {(() => {
+          const rerouteInfo = reroutedRoutes[route.id];
+          const activeIncident = (incidents || []).find(inc => inc.routeId === route.id && inc.status !== 'resolved');
+          if (!rerouteInfo?.active && !activeIncident) return null;
+
+          return (
+            <div className="card mb-4" style={{ gridColumn: 'span 2', background: '#fff7ed', border: '2px solid #ea580c', padding: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <span className="badge badge--danger" style={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                    COMMAND NOTICE: ROUTE ALTERATION ISSUED BY ADMIN
+                  </span>
+                  <h3 style={{ margin: '6px 0 4px 0', fontSize: 'var(--font-size-md)', color: '#9a3412', fontWeight: 800 }}>
+                    {rerouteInfo?.active ? `FOLLOW DETOUR: ${rerouteInfo.detourName}` : activeIncident.title}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: '#c2410c', fontWeight: 600 }}>
+                    {rerouteInfo?.active
+                      ? `HRTC Central Control has updated your active route schedule. Please follow the approved bypass.`
+                      : activeIncident.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* GPS TRACKED SPEED CARD (READ ONLY) */}
         <div className="stat-card">

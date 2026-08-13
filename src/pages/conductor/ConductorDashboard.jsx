@@ -102,7 +102,7 @@ return { fare, distanceKm: distKm };
 
 export default function ConductorDashboard() {
 const { session } = useAuth();
-const { busStates, addNotification } = useSimulation();
+const { busStates, addNotification, incidents, reroutedRoutes } = useSimulation();
 const { t } = useLanguage();
 
 const vehicleId = session?.vehicleId;
@@ -377,6 +377,33 @@ return (
         </div>
       </div>
     </div>
+
+    {/* Conductor Reroute & Incident Notice Banner */}
+    {(() => {
+      const rerouteInfo = reroutedRoutes[route?.id];
+      const activeIncident = (incidents || []).find(inc => inc.routeId === route?.id && inc.status !== 'resolved');
+      if (!rerouteInfo?.active && !activeIncident) return null;
+
+      return (
+        <div className="card mb-4" style={{ background: '#fff7ed', border: '2px solid #ea580c', padding: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <span className="badge badge--warning" style={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                COMMAND NOTICE: ROUTE DETOUR & TIMING UPDATE ISSUED
+              </span>
+              <h4 style={{ margin: '6px 0 2px 0', fontSize: 'var(--font-size-md)', color: '#9a3412', fontWeight: 800 }}>
+                {rerouteInfo?.active ? `Route Alteration: ${rerouteInfo.detourName}` : activeIncident.title}
+              </h4>
+              <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: '#c2410c' }}>
+                {rerouteInfo?.active
+                  ? `HRTC Central Control issued a detour. Fare calculation & intermediate station stop schedule auto-adjusted.`
+                  : activeIncident.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
 
     {/* Occupancy & Revenue cards */}
     <div className="grid grid--4 mb-4">

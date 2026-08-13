@@ -4,6 +4,7 @@ import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ROUTES } from '../../simulation/routes';
 import { VEHICLES, getVehicleCondition } from '../../simulation/vehicles';
+import { getWeatherForStop } from '../../simulation/incidents';
 import { formatETA, formatClockTime } from '../../simulation/eta';
 import MapView from '../../components/MapView';
 import SustainabilityBadge from '../../components/SustainabilityBadge';
@@ -12,7 +13,7 @@ import ETABadge from '../../components/ETABadge';
 export default function LiveTrack() {
 const { busId } = useParams();
 const navigate = useNavigate();
-const { busStates, addNotification, routeGeometries } = useSimulation();
+const { busStates, addNotification, routeGeometries, incidents, reroutedRoutes } = useSimulation();
 const { t } = useLanguage();
 const [notifySet, setNotifySet] = useState(false);
 const [autoPan, setAutoPan] = useState(true);
@@ -156,6 +157,83 @@ return (
       </div>
     </div>
 
+    {/* Destination Weather, Final Arrival & Incident Banner */}
+    {(() => {
+      const lastEta = busState.etas?.[busState.etas.length - 1];
+      const destName = route.stops?.[route.stops.length - 1]?.name || 'Destination';
+      const destWeather = getWeatherForStop(destName);
+      const rerouteInfo = reroutedRoutes[route.id];
+      const activeIncident = (incidents || []).find(inc => inc.routeId === route.id && inc.status !== 'resolved');
+
+      return (
+        <>
+          {/* Incident & Admin Reroute Notice Banner */}
+          {(activeIncident || rerouteInfo?.active) && (
+            <div className="card mb-4" style={{ background: '#fff7ed', border: '1px solid #fdba74', padding: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <span className="badge badge--warning" style={{ fontWeight: 800, marginBottom: '4px' }}>
+                    {rerouteInfo?.active ? 'OFFICIAL DETOUR ACTIVE' : 'ROAD HAZARD ALERT'}
+                  </span>
+                  <h4 style={{ margin: '4px 0 2px 0', fontSize: 'var(--font-size-md)', color: '#9a3412', fontWeight: 700 }}>
+                    {rerouteInfo?.active ? `Route Diverted ${rerouteInfo.detourName}` : activeIncident.title}
+                  </h4>
+                  <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: '#c2410c' }}>
+                    {rerouteInfo?.active
+                      ? `Command Notice: HRTC Admin issued a live route update. Bus is following the approved bypass.`
+                      : activeIncident.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Destination Weather & Final Arrival Summary Card */}
+          <div className="grid grid--2 mb-4" style={{ gap: 'var(--space-4)' }}>
+            <div className="card" style={{ padding: 'var(--space-4) var(--space-5)', background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(240,253,244,0.95) 100%)' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Destination Weather ({destName})
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--space-2)' }}>
+                <div>
+                  <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: '#166534' }}>
+                    {destWeather.temp}°C
+                  </div>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
+                    {destWeather.condition}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  <div>Humidity: <strong>{destWeather.humidity}</strong></div>
+                  <div>Himachal Terrain Weather</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 'var(--space-4) var(--space-5)', background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(239,246,255,0.95) 100%)' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Target Destination Arrival ({destName})
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--space-2)' }}>
+                <div>
+                  <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: '#1e40af' }}>
+                    {lastEta ? formatClockTime(lastEta.arrivalTime) : '--:--'}
+                  </div>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
+                    Estimated Travel: {lastEta ? formatETA(lastEta.etaMinutes) : 'Calculating...'}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  <div>Final Terminus Stop</div>
+                  <div style={{ color: '#1e40af', fontWeight: 700 }}>Live Schedule Sync</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    })()}
+
     {/* Driver, Crew & Terrain Telemetry */}
     <div className="grid grid--4 mb-4">
       <div className="stat-card">
@@ -288,6 +366,7 @@ return (
         routes={routeForMap}
         stops={stopsForMap}
         selectedBusId={busId}
+        incidents={incidents}
         trackBus={autoPan}
         className="map-container"
       />

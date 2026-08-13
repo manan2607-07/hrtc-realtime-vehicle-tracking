@@ -3,7 +3,7 @@ import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function Alerts() {
-const { anomalyLog, acknowledgeAlert, resolveAlert, resolveAllAlerts } = useSimulation();
+const { anomalyLog, acknowledgeAlert, resolveAlert, resolveAllAlerts, incidents, triggerReroute, reroutedRoutes } = useSimulation();
 const { t } = useLanguage();
 const [filterStatus, setFilterStatus] = useState('all');
 const [filterType, setFilterType] = useState('all');
@@ -28,6 +28,48 @@ return (
       <button className="btn btn--outline btn--sm" onClick={resolveAllAlerts}>
         Auto-Resolve All Alerts
       </button>
+    </div>
+
+    {/* Road Incident & Reroute Command Center */}
+    <div className="card mb-6" style={{ padding: 'var(--space-4) var(--space-5)' }}>
+      <h2 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--color-primary)' }}>
+        Live Road Hazards & Rerouting Control Command
+      </h2>
+      <div className="grid grid--3" style={{ gap: 'var(--space-4)' }}>
+        {incidents.map(inc => {
+          const isRerouted = inc.status === 'rerouted' || reroutedRoutes[inc.routeId]?.active;
+          return (
+            <div key={inc.id} style={{ background: 'var(--color-background-alt)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span className={`badge ${inc.severity === 'critical' ? 'badge--danger' : 'badge--warning'}`} style={{ textTransform: 'uppercase' }}>
+                  {inc.type} • {inc.severity}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{inc.reportedAt}</span>
+              </div>
+              <h4 style={{ margin: '8px 0 4px 0', fontSize: 'var(--font-size-sm)', fontWeight: 700 }}>{inc.title}</h4>
+              <p style={{ margin: '0 0 12px 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
+                {inc.description}
+              </p>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: '12px' }}>
+                Location: <strong>{inc.location}</strong>
+              </div>
+              {isRerouted ? (
+                <div className="badge badge--success" style={{ width: '100%', textAlign: 'center', display: 'block', padding: '6px' }}>
+                  Reroute Issued: {inc.alternateRouteName}
+                </div>
+              ) : (
+                <button
+                  className="btn btn--primary btn--sm"
+                  style={{ width: '100%' }}
+                  onClick={() => triggerReroute(inc.id, inc.routeId, inc.alternateRouteName)}
+                >
+                  Issue Reroute & Update Timings
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
 
     {/* Summary cards */}
