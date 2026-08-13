@@ -205,7 +205,7 @@ useEffect(() => {
           <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Altitude:</strong> <span style="color: #0d9488; font-weight: 700;">${bus.elevationMeters ? `${bus.elevationMeters}` : '1500'} m</span>
         </div>
         <div style="font-size: 11px; color: ${bus.status === 'breakdown' ? '#991b1b' : '#166534'}; font-weight: 600; background: ${bus.status === 'breakdown' ? '#fef2f2' : '#f0fdf4'}; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 3px;">
-          🔧 Condition: ${bus.status === 'breakdown' ? 'Service Required (45%)' : bus.status === 'delayed' ? 'Fair (84%)' : 'Optimal (98% Health)'}
+          Condition: ${bus.status === 'breakdown' ? 'Service Required (45%)' : bus.status === 'delayed' ? 'Fair (84%)' : 'Optimal (98% Health)'}
         </div>
         ${bus.driverName ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Driver: ${bus.driverName}</div>` : ''}
       </div>

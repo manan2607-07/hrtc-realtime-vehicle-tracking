@@ -272,15 +272,15 @@ return (
                   <div style={{ color: 'var(--color-text-secondary)', fontSize: '11px' }}>{item.route?.name}</div>
                 </td>
                 <td>
-                  <div style={{ fontWeight: 600 }}>👨‍✈️ {item.vehicle?.driver?.name}</div>
+                  <div style={{ fontWeight: 600 }}>{item.vehicle?.driver?.name}</div>
                   <div style={{ fontFamily: 'monospace', color: 'var(--color-primary)', fontSize: '11px' }}>
-                     {item.vehicle?.driver?.phone}
+                    {item.vehicle?.driver?.phone}
                   </div>
                 </td>
                 <td>
-                  <div style={{ fontWeight: 600 }}> {item.vehicle?.conductor?.name}</div>
+                  <div style={{ fontWeight: 600 }}>{item.vehicle?.conductor?.name}</div>
                   <div style={{ fontFamily: 'monospace', color: 'var(--color-text-muted)', fontSize: '11px' }}>
-                     {item.vehicle?.conductor?.phone}
+                    {item.vehicle?.conductor?.phone}
                   </div>
                 </td>
                 <td>
@@ -288,7 +288,7 @@ return (
                     {item.lat.toFixed(4)} N, {item.lng.toFixed(4)} E
                   </div>
                   <div style={{ color: item.isSignalLost ? 'var(--color-danger)' : 'var(--color-success)', fontSize: '11px' }}>
-                    {item.isSignalLost ? '❌ Signal Lost' : ' Signal Strong'}
+                    {item.isSignalLost ? 'Signal Lost' : 'Signal Strong'}
                   </div>
                 </td>
                 <td>

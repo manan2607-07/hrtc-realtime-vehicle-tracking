@@ -118,7 +118,7 @@ return (
               {/* DRIVER INFO */}
               <div style={{ background: 'var(--color-background)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                 <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                  👨‍✈️ Driver Information
+                  Driver Information
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)' }}>{vehicle.driver?.name}</div>
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>

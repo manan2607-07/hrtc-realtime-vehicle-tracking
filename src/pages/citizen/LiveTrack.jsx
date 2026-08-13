@@ -218,7 +218,6 @@ return (
         <div className="card mb-4" style={{ padding: 'var(--space-4) var(--space-5)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: 'var(--space-2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '1.2rem' }}>🔧</span>
               <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--color-text)' }}>
                 Vehicle Condition & Health Telemetry
               </h3>
@@ -229,7 +228,7 @@ return (
                 style={{ fontSize: 'var(--font-size-xs)', padding: '2px 8px' }}
                 onClick={() => setShowSensorInfo(!showSensorInfo)}
               >
-                📡 How Sensors Work
+                How Sensors Work
               </button>
               <span className="badge" style={{ background: condition.healthScore > 90 ? '#e8f5e9' : condition.healthScore > 75 ? '#fff3e0' : '#ffebee', color: condition.healthScore > 90 ? '#2e7d32' : condition.healthScore > 75 ? '#e65100' : '#c62828', fontWeight: 700 }}>
                 ● {condition.healthLabel} ({condition.healthScore}%)
@@ -239,7 +238,7 @@ return (
 
           {showSensorInfo && (
             <div style={{ marginBottom: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--color-info-bg)', border: '1px solid var(--color-info)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text)' }}>
-              <div style={{ fontWeight: 700, marginBottom: '4px', color: 'var(--color-info)' }}>📡 Live Telemetry & Sensor Architecture (AIS-140 Standard):</div>
+              <div style={{ fontWeight: 700, marginBottom: '4px', color: 'var(--color-info)' }}>Live Telemetry & Sensor Architecture (AIS-140 Standard):</div>
               <ul style={{ margin: 0, paddingLeft: '16px', lineHeight: 1.5 }}>
                 <li><strong>CAN-Bus (SAE J1939 OBD-II)</strong>: Plugs into engine ECU to stream Coolant Temp (°C), RPM, Fuel/Battery %, and Brake Diagnostics.</li>
                 <li><strong>Wireless TPMS Sensors</strong>: Bluetooth/RF pressure sensors mounted inside all 6 tyres send live PSI readings.</li>

@@ -212,7 +212,7 @@ export default function DriverDashboard() {
             onClick={handleStartRoute}
             style={{ fontSize: 'var(--font-size-xs)', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'cursor' }}
           >
-            🗺 Open Google Maps Route (All Stops)
+            Open Google Maps Route (All Stops)
           </button>
         </div>
         <div className="card__body" style={{ padding: 0 }}>
