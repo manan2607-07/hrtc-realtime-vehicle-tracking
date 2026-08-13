@@ -16,6 +16,7 @@ const { busStates, addNotification, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 const [notifySet, setNotifySet] = useState(false);
 const [autoPan, setAutoPan] = useState(true);
+const [showSensorInfo, setShowSensorInfo] = useState(false);
 
 const busState = busStates[busId];
 const vehicle = VEHICLES.find(v => v.id === busId);
@@ -223,11 +224,30 @@ return (
               </h3>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                className="btn btn--outline btn--sm"
+                style={{ fontSize: 'var(--font-size-xs)', padding: '2px 8px' }}
+                onClick={() => setShowSensorInfo(!showSensorInfo)}
+              >
+                📡 How Sensors Work
+              </button>
               <span className="badge" style={{ background: condition.healthScore > 90 ? '#e8f5e9' : condition.healthScore > 75 ? '#fff3e0' : '#ffebee', color: condition.healthScore > 90 ? '#2e7d32' : condition.healthScore > 75 ? '#e65100' : '#c62828', fontWeight: 700 }}>
                 ● {condition.healthLabel} ({condition.healthScore}%)
               </span>
             </div>
           </div>
+
+          {showSensorInfo && (
+            <div style={{ marginBottom: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--color-info-bg)', border: '1px solid var(--color-info)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text)' }}>
+              <div style={{ fontWeight: 700, marginBottom: '4px', color: 'var(--color-info)' }}>📡 Live Telemetry & Sensor Architecture (AIS-140 Standard):</div>
+              <ul style={{ margin: 0, paddingLeft: '16px', lineHeight: 1.5 }}>
+                <li><strong>CAN-Bus (SAE J1939 OBD-II)</strong>: Plugs into engine ECU to stream Coolant Temp (°C), RPM, Fuel/Battery %, and Brake Diagnostics.</li>
+                <li><strong>Wireless TPMS Sensors</strong>: Bluetooth/RF pressure sensors mounted inside all 6 tyres send live PSI readings.</li>
+                <li><strong>Dual 4G M2M Cellular Gateway</strong>: AIS-140 GPS module transmits diagnostic packets every 2s to HRTC Cloud.</li>
+                <li><strong>Depot Morning Inspection</strong>: Pre-trip mechanical checks certified by Depot Engineers before dispatch.</li>
+              </ul>
+            </div>
+          )}
 
           <div className="grid grid--4" style={{ gap: 'var(--space-3)' }}>
             <div style={{ background: 'var(--color-background-alt)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
