@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSimulation } from '../../context/SimulationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ROUTES } from '../../simulation/routes';
-import { VEHICLES } from '../../simulation/vehicles';
+import { VEHICLES, getVehicleCondition } from '../../simulation/vehicles';
 import { formatETA, formatClockTime } from '../../simulation/eta';
 import MapView from '../../components/MapView';
 import SustainabilityBadge from '../../components/SustainabilityBadge';
@@ -208,6 +208,57 @@ return (
         </div>
       </div>
     </div>
+
+    {/* Vehicle Condition & Mechanical Health Telemetry */}
+    {(() => {
+      const condition = getVehicleCondition(vehicle, busState);
+      if (!condition) return null;
+      return (
+        <div className="card mb-4" style={{ padding: 'var(--space-4) var(--space-5)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.2rem' }}>🔧</span>
+              <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--color-text)' }}>
+                Vehicle Condition & Health Telemetry
+              </h3>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="badge" style={{ background: condition.healthScore > 90 ? '#e8f5e9' : condition.healthScore > 75 ? '#fff3e0' : '#ffebee', color: condition.healthScore > 90 ? '#2e7d32' : condition.healthScore > 75 ? '#e65100' : '#c62828', fontWeight: 700 }}>
+                ● {condition.healthLabel} ({condition.healthScore}%)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid--4" style={{ gap: 'var(--space-3)' }}>
+            <div style={{ background: 'var(--color-background-alt)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>{condition.isEV ? 'Battery Charge' : 'Fuel Level'}</div>
+              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: 'var(--color-text)', marginTop: '2px' }}>{condition.fuelLevel}</div>
+              <div style={{ width: '100%', height: '6px', background: '#cbd5e1', borderRadius: '3px', marginTop: '6px', overflow: 'hidden' }}>
+                <div style={{ width: `${condition.fuelPercent}%`, height: '100%', background: condition.isEV ? '#10b981' : '#3b82f6', borderRadius: '3px' }}></div>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--color-background-alt)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Engine / Motor Temp</div>
+              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: '#0d9488', marginTop: '2px' }}>{condition.engineTemp}</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Brakes: {condition.brakeHealth}</div>
+            </div>
+
+            <div style={{ background: 'var(--color-background-alt)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Cabin & Tyres</div>
+              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: 'var(--color-text)', marginTop: '2px' }}>AC Temp: {condition.cabinTemp}</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Tyre Pressure: {condition.tyrePressure}</div>
+            </div>
+
+            <div style={{ background: 'var(--color-background-alt)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Depot Inspection & RTO</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: '#15803d', marginTop: '2px' }}>{condition.lastInspection}</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Fitness Cert: {condition.fitnessValidUntil}</div>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
 
     {/* Map */}
     <div className="card mb-6">

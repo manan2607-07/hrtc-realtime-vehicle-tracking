@@ -196,13 +196,16 @@ useEffect(() => {
     });
 
     const popupHtml = `
-      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 2px 4px; min-width: 180px;">
+      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 2px 4px; min-width: 190px;">
         <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 2px;">
           ${bus.busNumber || bus.id} ${bus.registrationNo ? `<span style="color: #64748b; font-weight: 500;">(${bus.registrationNo})</span>` : ''}
         </div>
         ${bus.routeName ? `<div style="font-size: 11px; color: #2563eb; font-weight: 600; margin-bottom: 4px;">${bus.routeName}</div>` : ''}
-        <div style="font-size: 11px; color: #334155; margin-bottom: 2px;">
+        <div style="font-size: 11px; color: #334155; margin-bottom: 3px;">
           <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Altitude:</strong> <span style="color: #0d9488; font-weight: 700;">${bus.elevationMeters ? `${bus.elevationMeters}` : '1500'} m</span>
+        </div>
+        <div style="font-size: 11px; color: ${bus.status === 'breakdown' ? '#991b1b' : '#166534'}; font-weight: 600; background: ${bus.status === 'breakdown' ? '#fef2f2' : '#f0fdf4'}; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 3px;">
+          🔧 Condition: ${bus.status === 'breakdown' ? 'Service Required (45%)' : bus.status === 'delayed' ? 'Fair (84%)' : 'Optimal (98% Health)'}
         </div>
         ${bus.driverName ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Driver: ${bus.driverName}</div>` : ''}
       </div>
