@@ -113,6 +113,13 @@ return (
       <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Himachal Road Transport Corporation</span>
     </div>
     <div>© 2025 Himachal Road Transport Corporation (HRTC). All Rights Reserved.</div>
+    <div style={{ margin: '8px 0', fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+      <span>Role Access Portals: </span>
+      <Link to="/" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Passenger</Link> &nbsp;|&nbsp; 
+      <Link to="/driver" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Driver</Link> &nbsp;|&nbsp; 
+      <Link to="/conductor" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Conductor</Link> &nbsp;|&nbsp; 
+      <Link to="/admin" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Executive Command</Link>
+    </div>
     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
       Official Real-Time Passenger Telemetry & Vehicle Tracking System · Government of Himachal Pradesh
     </div>
