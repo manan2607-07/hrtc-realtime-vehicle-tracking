@@ -11,7 +11,7 @@ import ETABadge from '../../components/ETABadge';
 export default function RouteDetail() {
 const { routeId } = useParams();
 const navigate = useNavigate();
-const { busStates } = useSimulation();
+const { busStates, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 
 const route = ROUTES.find(r => r.id === routeId);
@@ -42,11 +42,16 @@ const busesForMap = activeBuses.map(bs => {
     heading: bs.heading,
     speed: bs.speed,
     status: bs.status,
+    busNumber: vehicle?.busNumber,
     registrationNo: vehicle?.registrationNo,
+    serviceClass: vehicle?.serviceClass,
+    driverName: vehicle?.driver?.name,
+    routeName: route.name,
+    routeColor: route.color,
   };
 });
 
-const routeForMap = [{ id: route.id, waypoints: route.waypoints, color: route.color }];
+const routeForMap = [{ id: route.id, waypoints: routeGeometries[route.id] || route.waypoints, color: route.color }];
 const stopsForMap = route.stops.map(s => ({ ...s }));
 
 return (

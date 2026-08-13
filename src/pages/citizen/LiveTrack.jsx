@@ -12,7 +12,7 @@ import ETABadge from '../../components/ETABadge';
 export default function LiveTrack() {
 const { busId } = useParams();
 const navigate = useNavigate();
-const { busStates, addNotification } = useSimulation();
+const { busStates, addNotification, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 const [notifySet, setNotifySet] = useState(false);
 const [autoPan, setAutoPan] = useState(true);
@@ -49,12 +49,17 @@ const busForMap = [{
   heading: busState.heading,
   speed: busState.speed,
   status: busState.status,
+  busNumber: vehicle.busNumber,
   registrationNo: vehicle.registrationNo,
+  serviceClass: vehicle.serviceClass,
+  driverName: vehicle.driver?.name,
+  routeName: route.name,
+  routeColor: route.color,
 }];
 
 const routeForMap = [{
   id: route.id,
-  waypoints: route.waypoints,
+  waypoints: routeGeometries[route.id] || route.waypoints,
   color: route.color,
 }];
 

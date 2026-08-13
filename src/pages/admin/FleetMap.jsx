@@ -9,7 +9,7 @@ import SustainabilityBadge from '../../components/SustainabilityBadge';
 import { formatETA } from '../../simulation/eta';
 
 export default function FleetMap() {
-const { busStates } = useSimulation();
+const { busStates, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 const navigate = useNavigate();
 
@@ -64,7 +64,7 @@ const busesForMap = filteredBuses.map(bs => {
   };
 });
 
-const routesForMap = ROUTES.map(r => ({ id: r.id, waypoints: r.waypoints, color: r.color }));
+const routesForMap = ROUTES.map(r => ({ id: r.id, waypoints: routeGeometries[r.id] || r.waypoints, color: r.color }));
 
 const selectedBusState = selectedBus ? busStates[selectedBus] : null;
 const selectedVehicle = selectedBus ? VEHICLES.find(v => v.id === selectedBus) : null;

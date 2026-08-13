@@ -1508,6 +1508,11 @@ input, select, textarea {
   color: var(--color-primary) !important;
 }
 
+.bus-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
 .bus-marker-container {
   display: flex;
   flex-direction: column;
@@ -1522,6 +1527,55 @@ input, select, textarea {
   z-index: 1000 !important;
 }
 
+.bus-marker-heading-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s ease-out;
+}
+
+.bus-marker-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(39, 174, 96, 0.45);
+  animation: bus-live-pulse 2s infinite ease-out;
+  pointer-events: none;
+}
+
+.bus-marker-icon--delayed .bus-marker-pulse {
+  background: rgba(243, 156, 18, 0.45);
+}
+
+.bus-marker-icon--breakdown .bus-marker-pulse {
+  background: rgba(231, 76, 60, 0.5);
+  animation: pulse-breakdown 1s infinite;
+}
+
+.bus-marker-arrow {
+  position: absolute;
+  top: -5px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 7px solid #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes bus-live-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
 .bus-marker-badge {
   width: 32px;
   height: 32px;
@@ -1532,6 +1586,7 @@ input, select, textarea {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
   border: 2px solid white;
   transition: all 0.2s;
+  position: relative;
 }
 
 .bus-marker-container--selected .bus-marker-badge {

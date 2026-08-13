@@ -91,20 +91,21 @@ function getTimeOfDayMultiplier() {
  * @param {boolean} isTouristSeason - Override season for demo toggle
  * @returns {Array} ETAs for each upcoming stop: { stopId, stopName, etaMinutes, confidence, arrivalTime }
  */
-export function computeETAs(busState, isTouristSeason = null) {
+export function computeETAs(busState, isTouristSeason = null, customWaypoints = null, customSpeeds = null) {
   const route = ROUTES.find(r => r.id === busState.routeId);
   if (!route) return [];
 
-  const { waypoints, stops, segmentSpeeds } = route;
+  const activeWaypoints = (customWaypoints && customWaypoints.length >= 2) ? customWaypoints : route.waypoints;
+  const stops = route.stops;
   const seasonKey = isTouristSeason !== null
     ? (isTouristSeason ? 'touristSeason' : 'normal')
     : getSeasonKey();
 
-  const speeds = segmentSpeeds[seasonKey];
+  const speeds = customSpeeds || route.segmentSpeeds[seasonKey];
   const timeMultiplier = getTimeOfDayMultiplier();
 
-  // Find where the bus is on the route
-  const busWpIdx = busState.waypointIdx ?? findClosestWaypointIndex(busState.lat, busState.lng, waypoints);
+  // Find where the bus is on the active route waypoints
+  const busWpIdx = findClosestWaypointIndex(busState.lat, busState.lng, activeWaypoints);
 
   // Determine ping freshness for confidence
   const now = Date.now();
@@ -114,11 +115,18 @@ export function computeETAs(busState, isTouristSeason = null) {
 
   const isForward = (busState.direction ?? 1) >= 0;
 
-  // Filter and sort stops in trip direction
-  const upcomingStops = stops
-    .map(s => ({ ...s, wpIdx: findStopWaypointIndex(s, waypoints) }))
-    .filter(s => isForward ? s.wpIdx > busWpIdx : s.wpIdx < busWpIdx)
+  // Filter and sort stops in trip direction on activeWaypoints
+  let upcomingStops = stops
+    .map(s => ({ ...s, wpIdx: findStopWaypointIndex(s, activeWaypoints) }))
+    .filter(s => isForward ? s.wpIdx >= busWpIdx : s.wpIdx <= busWpIdx)
     .sort((a, b) => isForward ? a.wpIdx - b.wpIdx : b.wpIdx - a.wpIdx);
+
+  // Fallback if bus is at terminus: loop upcoming stops
+  if (upcomingStops.length === 0) {
+    upcomingStops = stops
+      .map(s => ({ ...s, wpIdx: findStopWaypointIndex(s, activeWaypoints) }))
+      .sort((a, b) => isForward ? b.wpIdx - a.wpIdx : a.wpIdx - b.wpIdx);
+  }
 
   const etas = [];
   let cumulativeMinutes = 0;
@@ -130,7 +138,7 @@ export function computeETAs(busState, isTouristSeason = null) {
     // Calculate distance from current position (or last upcoming stop) to this stop
     const fromIdx = etas.length === 0 ? busWpIdx : upcomingStops[i - 1].wpIdx;
     const toIdx = stopWpIdx;
-    const segmentDist = roadDistanceBetween(waypoints, fromIdx, toIdx);
+    const segmentDist = roadDistanceBetween(activeWaypoints, fromIdx, toIdx);
 
     // Get average speed for segments between fromIdx and toIdx
     const minWp = Math.min(fromIdx, toIdx);

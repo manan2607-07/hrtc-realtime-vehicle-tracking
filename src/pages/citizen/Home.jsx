@@ -9,7 +9,7 @@ import SustainabilityBadge from '../../components/SustainabilityBadge';
 import ETABadge from '../../components/ETABadge';
 
 export default function Home() {
-const { busStates } = useSimulation();
+const { busStates, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 const navigate = useNavigate();
 
@@ -146,7 +146,7 @@ const allBusesForMap = useMemo(() =>
 
 const allRoutesForMap = ROUTES.map(r => ({
   id: r.id,
-  waypoints: r.waypoints,
+  waypoints: routeGeometries[r.id] || r.waypoints,
   color: r.color,
 }));
 

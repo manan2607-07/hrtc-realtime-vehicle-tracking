@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { createSimulation } from '../simulation/engine.js';
+import { fetchAllRouteGeometries } from '../simulation/routeGeometry.js';
 
 const SimulationContext = createContext(null);
 
@@ -10,6 +11,7 @@ export function SimulationProvider({ children }) {
   const [tickCount, setTickCount] = useState(0);
   const [isTouristSeason, setIsTouristSeason] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [routeGeometries, setRouteGeometries] = useState({});
 
   useEffect(() => {
     const sim = createSimulation();
@@ -22,6 +24,21 @@ export function SimulationProvider({ children }) {
     });
 
     sim.start();
+
+    // Fetch road-following geometries from OSRM and inject into simulation
+    fetchAllRouteGeometries().then(geometries => {
+      if (geometries && Object.keys(geometries).length > 0) {
+        // Inject each route's dense waypoints into the simulation engine
+        for (const [routeId, waypoints] of Object.entries(geometries)) {
+          sim.setRouteGeometry(routeId, waypoints);
+        }
+        // Also expose the geometries for map display
+        setRouteGeometries(geometries);
+        console.log(`[HRTC] Road geometries loaded for ${Object.keys(geometries).length} routes`);
+      }
+    }).catch(err => {
+      console.warn('[HRTC] Failed to fetch road geometries, using straight-line fallback:', err);
+    });
 
     return () => {
       unsubscribe();
@@ -148,6 +165,7 @@ export function SimulationProvider({ children }) {
       activeGpsVehicleId,
       startDriverGpsBroadcast,
       stopDriverGpsBroadcast,
+      routeGeometries,
     }}>
       {children}
     </SimulationContext.Provider>

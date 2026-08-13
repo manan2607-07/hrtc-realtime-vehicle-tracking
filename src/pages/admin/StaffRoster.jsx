@@ -6,7 +6,7 @@ import { ROUTES } from '../../simulation/routes';
 import MapView from '../../components/MapView';
 
 export default function StaffRoster() {
-const { busStates } = useSimulation();
+const { busStates, routeGeometries } = useSimulation();
 const navigate = useNavigate();
 const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,7 +52,7 @@ const mapBuses = useMemo(() => {
   });
 }, [busStates]);
 
-const mapRoutes = ROUTES.map(r => ({ id: r.id, waypoints: r.waypoints, color: r.color }));
+const mapRoutes = ROUTES.map(r => ({ id: r.id, waypoints: routeGeometries[r.id] || r.waypoints, color: r.color }));
 
 return (
   <div>

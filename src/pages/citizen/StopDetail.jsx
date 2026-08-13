@@ -11,7 +11,7 @@ import ETABadge from '../../components/ETABadge';
 export default function StopDetail() {
 const { stopId } = useParams();
 const navigate = useNavigate();
-const { busStates } = useSimulation();
+const { busStates, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 
 // Find the stop across all routes
@@ -97,9 +97,14 @@ return (
           heading: b.heading,
           speed: b.speed,
           status: b.status,
+          busNumber: b.vehicle?.busNumber,
           registrationNo: b.vehicle?.registrationNo,
+          serviceClass: b.vehicle?.serviceClass,
+          driverName: b.vehicle?.driver?.name,
+          routeName: b.route?.name,
+          routeColor: b.route?.color,
         }))}
-        routes={routesThroughStop.map(r => ({ id: r.id, waypoints: r.waypoints, color: r.color }))}
+        routes={routesThroughStop.map(r => ({ id: r.id, waypoints: routeGeometries[r.id] || r.waypoints, color: r.color }))}
         className="map-container"
         onBusClick={(bus) => navigate(`/track/${bus.id}`)}
       />

@@ -8,7 +8,7 @@ import MapView from '../../components/MapView';
 import { BusIcon, OnTimeIcon, SignalLostIcon, CleanFleetIcon, MapIcon, AlertIcon, StaffIcon } from '../../components/Icon';
 
 export default function Dashboard() {
-const { busStates, anomalyLog, reportBreakdown, resolveAnomaly, resolveAllAlerts } = useSimulation();
+const { busStates, anomalyLog, reportBreakdown, resolveAnomaly, resolveAllAlerts, routeGeometries } = useSimulation();
 const { t } = useLanguage();
 const navigate = useNavigate();
 
@@ -50,7 +50,7 @@ const busesForMap = useMemo(() =>
     };
   }), [busStates]);
 
-const routesForMap = ROUTES.map(r => ({ id: r.id, waypoints: r.waypoints, color: r.color }));
+const routesForMap = ROUTES.map(r => ({ id: r.id, waypoints: routeGeometries[r.id] || r.waypoints, color: r.color }));
 
 // Live telemetry feed list
 const liveTelemetryList = useMemo(() => {

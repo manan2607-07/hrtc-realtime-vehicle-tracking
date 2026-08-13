@@ -10,7 +10,7 @@ import ETABadge from '../../components/ETABadge';
 
 export default function DriverDashboard() {
   const { session } = useAuth();
-  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast } = useSimulation();
+  const { busStates, activeGpsVehicleId, startDriverGpsBroadcast, stopDriverGpsBroadcast, routeGeometries } = useSimulation();
   const { t } = useLanguage();
   const [showSOS, setShowSOS] = useState(false);
 
@@ -88,7 +88,7 @@ export default function DriverDashboard() {
     heading: busState.heading, speed: currentSpeed, status: busState.status,
     registrationNo: vehicle.registrationNo,
   }];
-  const routeForMap = route ? [{ id: route.id, waypoints: route.waypoints, color: route.color }] : [];
+  const routeForMap = route ? [{ id: route.id, waypoints: routeGeometries[route.id] || route.waypoints, color: route.color }] : [];
 
   return (
     <div>

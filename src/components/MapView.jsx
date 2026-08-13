@@ -1,3 +1,4 @@
+// HRTC Live Map View Component
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -34,7 +35,6 @@ useEffect(() => {
   if (mapInstanceRef.current) return;
 
   const map = L.map(mapRef.current, {
-    preferCanvas: true,
     zoomControl: false,
     attributionControl: true,
     maxBounds: INDIA_BOUNDS,
@@ -131,12 +131,12 @@ useEffect(() => {
   stops.forEach(stop => {
     const icon = L.divIcon({
       className: 'stop-marker-wrapper',
-      html: `<div class="stop-marker-icon" style="${stop.isNext ? 'border-color:#E74C3C;background:#E74C3C;width:16px;height:16px;' : ''}"></div>`,
-      iconSize: [stop.isNext ? 16 : 12, stop.isNext ? 16 : 12],
-      iconAnchor: [stop.isNext ? 8 : 6, stop.isNext ? 8 : 6],
+      html: `<div class="stop-marker-icon"></div>`,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
     });
 
-    const marker = L.marker([stop.lat, stop.lng], { icon })
+    const marker = L.marker([stop.lat, stop.lng], { icon, zIndexOffset: 500 })
       .addTo(map)
       .bindPopup(`<strong>${stop.name}</strong>${stop.code ? `<br/>Code: ${stop.code}` : ''}`);
 
@@ -171,13 +171,18 @@ useEffect(() => {
 
     const isSelected = bus.id === selectedBusId;
     const busNum = bus.registrationNo || (bus.busNumber ? bus.busNumber.replace('Bus #', '') : (bus.id ? bus.id.replace('bus-', '') : ''));
+    const heading = bus.heading != null ? Math.round(bus.heading) : 0;
+    const badgeStyle = (bus.status === 'running' && bus.routeColor) ? `background:${bus.routeColor};` : '';
 
     const iconHtml = `
       <div class="bus-marker-container ${statusClass} ${isSelected ? 'bus-marker-container--selected' : ''}">
-        <div class="bus-marker-badge">
-          <svg class="bus-marker-svg" viewBox="0 0 24 24" width="18" height="18" fill="white">
-            <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-          </svg>
+        <div class="bus-marker-heading-wrapper" style="transform: rotate(${heading}deg);">
+          ${bus.status === 'running' || bus.status === 'delayed' ? '<div class="bus-marker-pulse"></div>' : ''}
+          <div class="bus-marker-badge" style="${badgeStyle}">
+            <svg class="bus-marker-svg" viewBox="0 0 24 24" width="20" height="20" fill="white">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+            </svg>
+          </div>
         </div>
         ${busNum ? `<span class="bus-marker-number">${busNum}</span>` : ''}
       </div>
@@ -204,16 +209,33 @@ useEffect(() => {
     `;
 
     if (busMarkersRef.current[bus.id]) {
-      // Update existing marker position smoothly
+      // Update existing marker position smoothly without destroying DOM node
       const marker = busMarkersRef.current[bus.id];
       marker.setLatLng([bus.lat, bus.lng]);
-      marker.setIcon(icon);
+
+      // Rotate heading wrapper directly in DOM for max performance
+      const iconEl = marker.getElement();
+      if (iconEl) {
+        const headingEl = iconEl.querySelector('.bus-marker-heading-wrapper');
+        if (headingEl) {
+          headingEl.style.transform = `rotate(${heading}deg)`;
+        }
+      }
+
+      // Only re-set full icon if status or selection state changed
+      const statusKey = `${bus.status}-${isSelected}-${busNum}`;
+      if (marker._lastStatusKey !== statusKey) {
+        marker.setIcon(icon);
+        marker._lastStatusKey = statusKey;
+      }
+
       marker.setPopupContent(popupHtml);
     } else {
       // Create new marker
-      const marker = L.marker([bus.lat, bus.lng], { icon, zIndexOffset: isSelected ? 1000 : 0 })
+      const marker = L.marker([bus.lat, bus.lng], { icon, zIndexOffset: isSelected ? 2000 : 1000 })
         .addTo(map);
 
+      marker._lastStatusKey = `${bus.status}-${isSelected}-${busNum}`;
       marker.bindPopup(popupHtml);
 
       if (onBusClick) {

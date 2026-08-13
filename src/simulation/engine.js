@@ -10,8 +10,17 @@
 import { ROUTES } from './routes.js';
 import { VEHICLES, VEHICLE_STATUS } from './vehicles.js';
 import { computeETAs } from './eta.js';
+import { interpolateSegmentSpeeds } from './routeGeometry.js';
 
-const TICK_INTERVAL_MS = 2000; // 2 seconds per tick
+/**
+ * Road geometry store — dense [lat,lng][] waypoints from OSRM.
+ * Keyed by routeId. When present, buses follow these instead of
+ * the sparse waypoints defined in routes.js.
+ */
+const roadGeometries = {};
+const roadSegmentSpeeds = {};
+
+const TICK_INTERVAL_MS = 500; // 0.5 seconds per tick for fast smooth live bus movement
 
 /**
  * Calculate distance in meters between two lat/lng points (Haversine formula)
@@ -50,18 +59,65 @@ function checkSignalLoss(route, wpIdx) {
   return false;
 }
 
+const SIM_STATE_KEY = 'hrtc_simulation_persistent_state_v5';
+
+function loadPersistedBusStates() {
+  try {
+    const raw = localStorage.getItem(SIM_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.states || !parsed.savedAt) return null;
+
+    // Must be within last 12 hours
+    const elapsedSec = (Date.now() - parsed.savedAt) / 1000;
+    if (elapsedSec < 0 || elapsedSec > 43200) return null;
+
+    // Restore persisted states
+    let states = parsed.states;
+    // Fast-forward buses by elapsedSec (up to 100 ticks max to keep quick)
+    const ticksToSimulate = Math.min(Math.floor((elapsedSec * 1000) / TICK_INTERVAL_MS), 100);
+    for (let t = 0; t < ticksToSimulate; t++) {
+      const next = {};
+      for (const id of Object.keys(states)) {
+        next[id] = tickBus(states[id], false);
+      }
+      states = next;
+    }
+    return states;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedBusStates(states) {
+  try {
+    localStorage.setItem(SIM_STATE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      states,
+    }));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 /**
  * Initialize simulation state for all buses with fixed, realistic initial positions
  */
 function initBusStates() {
+  const persisted = loadPersistedBusStates();
+  if (persisted && Object.keys(persisted).length === VEHICLES.length) {
+    return persisted;
+  }
+
   const states = {};
 
   VEHICLES.forEach((vehicle, idx) => {
     const route = ROUTES.find(r => r.id === vehicle.routeId);
     if (!route) return;
 
-    // Stagger buses evenly along route
-    const totalWaypoints = route.waypoints.length;
+    // Use road geometry if available, otherwise fall back to original waypoints
+    const waypoints = roadGeometries[vehicle.routeId] || route.waypoints;
+    const totalWaypoints = waypoints.length;
     const busesOnRoute = VEHICLES.filter(v => v.routeId === vehicle.routeId);
     const positionInGroup = busesOnRoute.indexOf(vehicle);
     const spacing = Math.floor(totalWaypoints / (busesOnRoute.length + 1));
@@ -71,8 +127,8 @@ function initBusStates() {
       vehicleId: vehicle.id,
       routeId: vehicle.routeId,
       waypointIdx: startIdx,
-      lat: route.waypoints[startIdx][0],
-      lng: route.waypoints[startIdx][1],
+      lat: waypoints[startIdx][0],
+      lng: waypoints[startIdx][1],
       speed: 25, // km/h
       heading: 0,
       lastPingTime: Date.now(),
@@ -106,7 +162,8 @@ function tickBus(busState, isTouristSeason) {
     return newState;
   }
 
-  const waypoints = route.waypoints;
+  // Use dense road geometry if available for road-following movement
+  const waypoints = roadGeometries[busState.routeId] || route.waypoints;
   const totalWp = waypoints.length;
 
   // Handle breakdown state — bus stays stationary (speed = 0)
@@ -123,7 +180,8 @@ function tickBus(busState, isTouristSeason) {
 
   // Determine target segment speed based on authentic route physics
   const seasonKey = isTouristSeason ? 'touristSeason' : 'normal';
-  const speeds = route.segmentSpeeds[seasonKey];
+  // Use interpolated speeds for dense waypoints if available
+  const speeds = roadSegmentSpeeds[busState.routeId]?.[seasonKey] || route.segmentSpeeds[seasonKey];
   const segIdx = Math.min(newState.waypointIdx, speeds.length - 1);
   const routeTargetSpeed = speeds[segIdx] || 40;
 
@@ -201,7 +259,7 @@ function tickBus(busState, isTouristSeason) {
   }
 
   // Compute smooth ETAs for upcoming stops
-  newState.etas = computeETAs(newState, isTouristSeason);
+  newState.etas = computeETAs(newState, isTouristSeason, waypoints, speeds);
 
   return newState;
 }
@@ -311,6 +369,7 @@ export function createSimulation() {
     }
 
     busStates = newStates;
+    savePersistedBusStates(busStates);
 
     listeners.forEach(fn => fn({
       busStates: { ...busStates },
@@ -389,6 +448,58 @@ export function createSimulation() {
         }
       });
       anomalyLog = anomalyLog.map(a => ({ ...a, status: 'resolved' }));
+    },
+
+    /**
+     * Inject road-following geometry for a route (called after OSRM fetch).
+     * Also repositions any buses on that route to the nearest dense waypoint.
+     */
+    setRouteGeometry(routeId, denseWaypoints) {
+      const route = ROUTES.find(r => r.id === routeId);
+      if (!route || !denseWaypoints || denseWaypoints.length < 2) return;
+
+      roadGeometries[routeId] = denseWaypoints;
+
+      // Precompute interpolated segment speeds for the dense waypoints
+      const normalSpeeds = interpolateSegmentSpeeds(
+        route.waypoints, denseWaypoints, route.segmentSpeeds.normal
+      );
+      const touristSpeeds = interpolateSegmentSpeeds(
+        route.waypoints, denseWaypoints, route.segmentSpeeds.touristSeason
+      );
+      roadSegmentSpeeds[routeId] = { normal: normalSpeeds, touristSeason: touristSpeeds };
+
+      // Reposition buses on this route to nearest dense waypoint
+      for (const id of Object.keys(busStates)) {
+        if (busStates[id].routeId !== routeId) continue;
+        const bs = busStates[id];
+
+        // Find nearest dense waypoint to current position
+        let minDist = Infinity;
+        let nearestIdx = 0;
+        for (let i = 0; i < denseWaypoints.length; i++) {
+          const d = Math.abs(bs.lat - denseWaypoints[i][0]) + Math.abs(bs.lng - denseWaypoints[i][1]);
+          if (d < minDist) {
+            minDist = d;
+            nearestIdx = i;
+          }
+        }
+
+        busStates[id] = {
+          ...bs,
+          waypointIdx: nearestIdx,
+          lat: denseWaypoints[nearestIdx][0],
+          lng: denseWaypoints[nearestIdx][1],
+          etas: computeETAs(bs, isTouristSeason, denseWaypoints, normalSpeeds),
+        };
+      }
+    },
+
+    /**
+     * Get road geometries map (routeId → dense waypoints)
+     */
+    getRouteGeometries() {
+      return { ...roadGeometries };
     },
 
     updateRealGps(vehicleId, { lat, lng, speed, heading }) {
