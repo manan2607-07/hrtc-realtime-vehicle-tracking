@@ -52,7 +52,9 @@ function findStopWaypointIndex(stop, waypoints) {
  */
 function roadDistanceBetween(waypoints, fromIdx, toIdx) {
   let dist = 0;
-  for (let i = fromIdx; i < toIdx && i < waypoints.length - 1; i++) {
+  const start = Math.min(fromIdx, toIdx);
+  const end = Math.max(fromIdx, toIdx);
+  for (let i = start; i < end && i < waypoints.length - 1; i++) {
     dist += haversine(
       waypoints[i][0], waypoints[i][1],
       waypoints[i + 1][0], waypoints[i + 1][1]
@@ -62,121 +64,73 @@ function roadDistanceBetween(waypoints, fromIdx, toIdx) {
 }
 
 /**
- * Get the season factor for speed adjustment
- */
-function getSeasonKey() {
-  const month = new Date().getMonth(); // 0-11
-  // Tourist season: May-July (summer), Oct (post-monsoon)
-  if (month >= 4 && month <= 6) return 'touristSeason';
-  if (month === 9) return 'touristSeason';
-  return 'normal';
-}
-
-/**
- * Get time-of-day speed multiplier
- */
-function getTimeOfDayMultiplier() {
-  const hour = new Date().getHours();
-  // Rush hours: 8-10 AM, 5-7 PM
-  if ((hour >= 8 && hour <= 10) || (hour >= 17 && hour <= 19)) return 0.75;
-  // Night: slower
-  if (hour >= 21 || hour <= 5) return 0.6;
-  return 1.0;
-}
-
-/**
  * Compute ETAs for all upcoming stops on a trip
- *
- * @param {Object} busState - Current bus state { lat, lng, speed, heading, lastPingTime, routeId, waypointIdx }
- * @param {boolean} isTouristSeason - Override season for demo toggle
- * @returns {Array} ETAs for each upcoming stop: { stopId, stopName, etaMinutes, confidence, arrivalTime }
  */
 export function computeETAs(busState, isTouristSeason = null, customWaypoints = null, customSpeeds = null) {
   const route = ROUTES.find(r => r.id === busState.routeId);
-  if (!route) return [];
+  if (!route || !route.stops || route.stops.length === 0) return [];
 
-  const activeWaypoints = (customWaypoints && customWaypoints.length >= 2) ? customWaypoints : route.waypoints;
   const stops = route.stops;
-  const seasonKey = isTouristSeason !== null
-    ? (isTouristSeason ? 'touristSeason' : 'normal')
-    : getSeasonKey();
-
-  const speeds = customSpeeds || route.segmentSpeeds[seasonKey];
-  const timeMultiplier = getTimeOfDayMultiplier();
-
-  // Find where the bus is on the active route waypoints
-  const busWpIdx = findClosestWaypointIndex(busState.lat, busState.lng, activeWaypoints);
-
-  // Determine ping freshness for confidence
-  const now = Date.now();
-  const pingAge = now - (busState.lastPingTime || now);
-  const isStale = pingAge > 60000; // > 1 minute since last ping
-  const isVeryStale = pingAge > 300000; // > 5 minutes
-
   const isForward = (busState.direction ?? 1) >= 0;
+  const now = Date.now();
 
-  // Filter and sort stops in trip direction on activeWaypoints
-  let upcomingStops = stops
-    .map(s => ({ ...s, wpIdx: findStopWaypointIndex(s, activeWaypoints) }))
-    .filter(s => isForward ? s.wpIdx >= busWpIdx : s.wpIdx <= busWpIdx)
-    .sort((a, b) => isForward ? a.wpIdx - b.wpIdx : b.wpIdx - a.wpIdx);
+  // Find closest stop index on route to current bus location
+  let closestStopIdx = 0;
+  let minStopDist = Infinity;
 
-  // Fallback if bus is at terminus: loop upcoming stops
-  if (upcomingStops.length === 0) {
-    upcomingStops = stops
-      .map(s => ({ ...s, wpIdx: findStopWaypointIndex(s, activeWaypoints) }))
-      .sort((a, b) => isForward ? b.wpIdx - a.wpIdx : a.wpIdx - b.wpIdx);
+  stops.forEach((s, idx) => {
+    const d = haversine(busState.lat, busState.lng, s.lat, s.lng);
+    if (d < minStopDist) {
+      minStopDist = d;
+      closestStopIdx = idx;
+    }
+  });
+
+  // Slices upcoming stops sequentially along the route direction
+  let upcomingStops = [];
+  if (isForward) {
+    upcomingStops = stops.slice(closestStopIdx);
+    if (upcomingStops.length === 0) upcomingStops = [...stops];
+  } else {
+    upcomingStops = stops.slice(0, closestStopIdx + 1).reverse();
+    if (upcomingStops.length === 0) upcomingStops = [...stops].reverse();
   }
 
   const etas = [];
   let cumulativeMinutes = 0;
+  let prevLat = busState.lat;
+  let prevLng = busState.lng;
+  let prevSchedMin = stops[closestStopIdx]?.scheduledMin || 0;
 
-  for (let i = 0; i < upcomingStops.length; i++) {
-    const stop = upcomingStops[i];
-    const stopWpIdx = stop.wpIdx;
+  upcomingStops.forEach((stop, i) => {
+    const distKm = haversine(prevLat, prevLng, stop.lat, stop.lng);
+    const schedDiff = Math.abs((stop.scheduledMin || 0) - prevSchedMin);
 
-    // Calculate distance from current position (or last upcoming stop) to this stop
-    const fromIdx = etas.length === 0 ? busWpIdx : upcomingStops[i - 1].wpIdx;
-    const toIdx = stopWpIdx;
-    const segmentDist = roadDistanceBetween(activeWaypoints, fromIdx, toIdx);
+    // Calculate realistic travel time based on distance & speed
+    const spd = Math.max(18, busState.speed || 32);
+    let travelMin = (distKm / spd) * 60;
 
-    // Get average speed for segments between fromIdx and toIdx
-    const minWp = Math.min(fromIdx, toIdx);
-    const maxWp = Math.max(fromIdx, toIdx);
-    let avgSpeed = 0;
-    let segCount = 0;
-    for (let j = minWp; j < maxWp && j < speeds.length; j++) {
-      avgSpeed += speeds[j];
-      segCount++;
+    if (i > 0) {
+      // Ensure positive cumulative travel time for every subsequent stop
+      travelMin = Math.max(travelMin, schedDiff > 0 ? schedDiff : 6);
+    } else {
+      // First stop (immediate next stop)
+      travelMin = Math.max(0, Math.min(travelMin, 8));
     }
-    avgSpeed = segCount > 0 ? avgSpeed / segCount : 20;
-
-    // Apply time-of-day multiplier
-    avgSpeed *= timeMultiplier;
-
-    // Blend with current bus speed for the immediate next segment
-    if (etas.length === 0 && busState.speed > 0) {
-      avgSpeed = avgSpeed * 0.4 + busState.speed * 0.6;
-    }
-
-    // Prevent unreasonably low speeds
-    avgSpeed = Math.max(avgSpeed, 8);
-
-    const segmentTimeMin = (segmentDist / avgSpeed) * 60;
-    cumulativeMinutes += segmentTimeMin;
-
-    // Determine confidence
-    let confidence = 'live';
-    if (isVeryStale) confidence = 'low';
-    else if (isStale) confidence = 'estimate';
-    else if (etas.length > 3) confidence = 'estimate';
 
     const haltMinutes = stop.haltMin ?? (
       stop.name.includes('ISBT') || stop.name.includes('Stand') ? 5 : 2
     );
 
+    cumulativeMinutes += travelMin;
+
     const arrivalDate = new Date(now + cumulativeMinutes * 60000);
     const departureDate = new Date(now + (cumulativeMinutes + haltMinutes) * 60000);
+
+    let confidence = 'live';
+    const pingAge = now - (busState.lastPingTime || now);
+    if (pingAge > 300000) confidence = 'low';
+    else if (pingAge > 60000 || i > 3) confidence = 'estimate';
 
     etas.push({
       stopId: stop.id,
@@ -188,9 +142,14 @@ export function computeETAs(busState, isTouristSeason = null, customWaypoints = 
       arrivalTime: arrivalDate.toISOString(),
       departureTime: departureDate.toISOString(),
       haltMinutes,
-      distanceKm: Math.round(segmentDist * 10) / 10,
+      distanceKm: Math.round(distKm * 10) / 10,
     });
-  }
+
+    prevLat = stop.lat;
+    prevLng = stop.lng;
+    prevSchedMin = stop.scheduledMin || prevSchedMin;
+    cumulativeMinutes += haltMinutes;
+  });
 
   return etas;
 }
