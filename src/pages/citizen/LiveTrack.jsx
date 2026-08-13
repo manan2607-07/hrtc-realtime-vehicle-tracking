@@ -191,10 +191,10 @@ return (
       <div className="stat-card">
         <div className="stat-card__label">Altitude</div>
         <div className="stat-card__value" style={{ color: '#0d9488', fontSize: 'var(--font-size-xl)' }}>
-          {busState.elevationMeters || 1500} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>m.a.s.l.</span>
+          {busState.elevationMeters || 1500} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>meters</span>
         </div>
         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-          Elevation Above Sea Level
+          Height Above Sea Level
         </div>
       </div>
 

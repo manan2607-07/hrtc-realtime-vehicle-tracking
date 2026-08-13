@@ -167,12 +167,12 @@ useEffect(() => {
     const statusClass = bus.status === 'breakdown' ? 'bus-marker-icon--breakdown'
       : bus.status === 'delayed' ? 'bus-marker-icon--delayed'
       : bus.status === 'signal-lost' ? 'bus-marker-icon--signal-lost'
-      : 'bus-marker-icon--running';
-
+      : 'bus-marker-icon--running';    
     const isSelected = bus.id === selectedBusId;
     const busNum = bus.registrationNo || (bus.busNumber ? bus.busNumber.replace('Bus #', '') : (bus.id ? bus.id.replace('bus-', '') : ''));
-    const heading = bus.heading != null ? Math.round(bus.heading) : 0;
-    const badgeStyle = (bus.status === 'running' && bus.routeColor) ? `background:${bus.routeColor};` : '';
+    const routeColor = bus.routeColor || '#16a34a';
+    const badgeBg = bus.status === 'breakdown' ? '#dc2626' : bus.status === 'delayed' ? '#d97706' : bus.status === 'signal-lost' ? '#7f8c8d' : routeColor;
+    const badgeStyle = `background: ${badgeBg};`;
 
     const iconHtml = `
       <div class="bus-marker-container ${statusClass} ${isSelected ? 'bus-marker-container--selected' : ''}">
@@ -202,7 +202,7 @@ useEffect(() => {
         </div>
         ${bus.routeName ? `<div style="font-size: 11px; color: #2563eb; font-weight: 600; margin-bottom: 4px;">${bus.routeName}</div>` : ''}
         <div style="font-size: 11px; color: #334155; margin-bottom: 2px;">
-          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Altitude:</strong> <span style="color: #0d9488; font-weight: 700;">${bus.elevationMeters ? `${bus.elevationMeters}` : '1500'} m.a.s.l.</span>
+          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Altitude:</strong> <span style="color: #0d9488; font-weight: 700;">${bus.elevationMeters ? `${bus.elevationMeters}` : '1500'} m</span>
         </div>
         ${bus.driverName ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Driver: ${bus.driverName}</div>` : ''}
       </div>

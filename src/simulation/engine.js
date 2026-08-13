@@ -68,22 +68,35 @@ function loadPersistedBusStates() {
     const parsed = JSON.parse(raw);
     if (!parsed || !parsed.states || !parsed.savedAt) return null;
 
-    // Must be within last 12 hours
     const elapsedSec = (Date.now() - parsed.savedAt) / 1000;
     if (elapsedSec < 0 || elapsedSec > 43200) return null;
 
-    // Restore persisted states
-    let states = parsed.states;
-    // Fast-forward buses by elapsedSec (up to 100 ticks max to keep quick)
-    const ticksToSimulate = Math.min(Math.floor((elapsedSec * 1000) / TICK_INTERVAL_MS), 100);
-    for (let t = 0; t < ticksToSimulate; t++) {
-      const next = {};
-      for (const id of Object.keys(states)) {
-        next[id] = tickBus(states[id], false);
+    const restoredStates = {};
+    for (const id of Object.keys(parsed.states)) {
+      const s = parsed.states[id];
+      const route = ROUTES.find(r => r.id === s.routeId);
+      if (!route) continue;
+      const waypoints = roadGeometries[s.routeId] || route.waypoints;
+      const totalWp = waypoints.length;
+      
+      // Calculate normalized waypoint index based on saved progressRatio or clamp
+      let wpIdx = s.waypointIdx;
+      if (s.progressRatio != null && s.progressRatio >= 0 && s.progressRatio <= 1) {
+        wpIdx = Math.floor(s.progressRatio * (totalWp - 1));
+      } else if (wpIdx >= totalWp) {
+        wpIdx = Math.min(wpIdx, totalWp - 1);
       }
-      states = next;
+
+      restoredStates[id] = {
+        ...s,
+        waypointIdx: wpIdx,
+        progressRatio: s.progressRatio ?? (wpIdx / Math.max(1, totalWp - 1)),
+        lat: waypoints[wpIdx] ? waypoints[wpIdx][0] : s.lat,
+        lng: waypoints[wpIdx] ? waypoints[wpIdx][1] : s.lng,
+      };
     }
-    return states;
+
+    return restoredStates;
   } catch {
     return null;
   }
@@ -301,6 +314,7 @@ function tickBus(busState, isTouristSeason) {
 
   // Calculate heading towards target waypoint
   newState.heading = calcHeading(newState.lat, newState.lng, targetWp[0], targetWp[1]);
+  newState.progressRatio = Math.max(0, Math.min(1, newState.waypointIdx / Math.max(1, totalWp - 1)));
 
   // Check signal loss
   const signalLost = checkSignalLoss(route, newState.waypointIdx);
