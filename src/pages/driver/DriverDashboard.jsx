@@ -111,6 +111,33 @@ export default function DriverDashboard() {
         </div>
       </div>
 
+      {/* Driver Command Reroute & Incident Notice Banner */}
+      {(() => {
+        const rerouteInfo = reroutedRoutes[route?.id];
+        const activeIncident = (incidents || []).find(inc => inc.routeId === route?.id && inc.status !== 'resolved');
+        if (!rerouteInfo?.active && !activeIncident) return null;
+
+        return (
+          <div className="card mb-4" style={{ background: '#fff7ed', border: '2px solid #ea580c', padding: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <span className="badge badge--danger" style={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                  COMMAND NOTICE: OFFICIAL ROUTE ALTERATION ISSUED
+                </span>
+                <h3 style={{ margin: '6px 0 4px 0', fontSize: 'var(--font-size-md)', color: '#9a3412', fontWeight: 800 }}>
+                  {rerouteInfo?.active ? `FOLLOW DETOUR: ${rerouteInfo.detourName}` : activeIncident.title}
+                </h3>
+                <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: '#c2410c', fontWeight: 600 }}>
+                  {rerouteInfo?.active
+                    ? `HRTC Central Control has updated your active route schedule. Please follow the approved bypass.`
+                    : activeIncident.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* GPS Telemetry & Live Speed cards */}
       <div className="grid grid--4 mb-4">
         
@@ -150,33 +177,6 @@ export default function DriverDashboard() {
             )}
           </div>
         </div>
-
-        {/* Driver Command Reroute & Incident Notice Banner */}
-        {(() => {
-          const rerouteInfo = reroutedRoutes[route.id];
-          const activeIncident = (incidents || []).find(inc => inc.routeId === route.id && inc.status !== 'resolved');
-          if (!rerouteInfo?.active && !activeIncident) return null;
-
-          return (
-            <div className="card mb-4" style={{ gridColumn: 'span 2', background: '#fff7ed', border: '2px solid #ea580c', padding: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <span className="badge badge--danger" style={{ fontWeight: 800, textTransform: 'uppercase' }}>
-                    COMMAND NOTICE: ROUTE ALTERATION ISSUED BY ADMIN
-                  </span>
-                  <h3 style={{ margin: '6px 0 4px 0', fontSize: 'var(--font-size-md)', color: '#9a3412', fontWeight: 800 }}>
-                    {rerouteInfo?.active ? `FOLLOW DETOUR: ${rerouteInfo.detourName}` : activeIncident.title}
-                  </h3>
-                  <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: '#c2410c', fontWeight: 600 }}>
-                    {rerouteInfo?.active
-                      ? `HRTC Central Control has updated your active route schedule. Please follow the approved bypass.`
-                      : activeIncident.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* GPS TRACKED SPEED CARD (READ ONLY) */}
         <div className="stat-card">
@@ -248,8 +248,43 @@ export default function DriverDashboard() {
             routes={routeForMap}
             center={[busState.lat, busState.lng]}
             zoom={13}
+            incidents={incidents}
             className="map-container"
           />
+        </div>
+      </div>
+
+      {/* Live Road Incidents & Network Events Feed */}
+      <div className="card mb-4">
+        <div className="card__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="card__title">Live Road Hazards & Incident Stream (Himachal Pradesh)</span>
+          <span className="badge badge--warning">Active Live Feed</span>
+        </div>
+        <div className="card__body">
+          <div className="grid grid--3" style={{ gap: 'var(--space-3)' }}>
+            {(incidents || []).map(inc => {
+              const isMyRoute = inc.routeId === route?.id;
+              const isRerouted = inc.status === 'rerouted' || reroutedRoutes[inc.routeId]?.active;
+              return (
+                <div key={inc.id} style={{ background: isMyRoute ? '#fff7ed' : 'var(--color-background-alt)', border: isMyRoute ? '2px solid #f97316' : '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className={`badge ${inc.severity === 'critical' ? 'badge--danger' : 'badge--warning'}`}>
+                      {inc.type}
+                    </span>
+                    {isMyRoute && <span className="badge badge--primary">YOUR ROUTE</span>}
+                  </div>
+                  <h4 style={{ margin: '6px 0 2px 0', fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>{inc.title}</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{inc.description}</p>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '4px' }}>Location: {inc.location}</div>
+                  {isRerouted && (
+                    <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: 700, color: '#166534' }}>
+                      Detour Active: {inc.alternateRouteName}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

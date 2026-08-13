@@ -438,6 +438,40 @@ return (
       </div>
     </div>
 
+    {/* Live Road Hazards & Incident Stream */}
+    <div className="card mb-4">
+      <div className="card__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="card__title">Live Road Hazards & Weather Incident Stream</span>
+        <span className="badge badge--warning">Live Network Feed</span>
+      </div>
+      <div className="card__body">
+        <div className="grid grid--3" style={{ gap: 'var(--space-3)' }}>
+          {(incidents || []).map(inc => {
+            const isMyRoute = inc.routeId === route?.id;
+            const isRerouted = inc.status === 'rerouted' || reroutedRoutes[inc.routeId]?.active;
+            return (
+              <div key={inc.id} style={{ background: isMyRoute ? '#fff7ed' : 'var(--color-background-alt)', border: isMyRoute ? '2px solid #f97316' : '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className={`badge ${inc.severity === 'critical' ? 'badge--danger' : 'badge--warning'}`}>
+                    {inc.type}
+                  </span>
+                  {isMyRoute && <span className="badge badge--primary">YOUR ROUTE</span>}
+                </div>
+                <h4 style={{ margin: '6px 0 2px 0', fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>{inc.title}</h4>
+                <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{inc.description}</p>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '4px' }}>Location: {inc.location}</div>
+                {isRerouted && (
+                  <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: 700, color: '#166534' }}>
+                    Detour Active: {inc.alternateRouteName}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+
     {/* ISSUE TICKET & SEAT ALLOTMENT FORM */}
     <div className="card mb-4">
       <div className="card__header" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-3)' }}>
