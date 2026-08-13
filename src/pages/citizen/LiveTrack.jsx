@@ -155,60 +155,56 @@ return (
       </div>
     </div>
 
-    {/* Driver & Crew Info */}
+    {/* Driver, Crew & Terrain Telemetry */}
     <div className="grid grid--4 mb-4">
-      <div className="stat-card" style={{ gridColumn: 'span 2' }}>
+      <div className="stat-card">
         <div className="stat-card__label">Driver & Conductor Details</div>
-        <div className="flex flex--between flex--center mt-2" style={{ gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>
-              Driver: {vehicle.driver?.name}
-            </div>
-            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-              Driver Phone:{' '}
-              <a
-                href={`tel:${vehicle.driver?.phone?.replace(/[^0-9+]/g, '')}`}
-                style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
-                title="Click to call driver"
-              >
-                {vehicle.driver?.phone}
-              </a>{' '}
-              · Emp ID: {vehicle.driver?.empId}
-            </div>
-            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-              {vehicle.driver?.experienceYears} yrs exp · {vehicle.driver?.badge}
-            </div>
-            {vehicle.driver?.conductor && (
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                Conductor: <strong>{vehicle.driver.conductor.name}</strong> · Phone:{' '}
-                <a
-                  href={`tel:${vehicle.driver.conductor.phone?.replace(/[^0-9+]/g, '')}`}
-                  style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
-                  title="Click to call conductor"
-                >
-                  {vehicle.driver.conductor.phone}
-                </a>{' '}
-                (ID: {vehicle.driver.conductor.empId})
-              </div>
-            )}
+        <div className="mt-1">
+          <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700 }}>
+            Driver: {vehicle.driver?.name}
           </div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+            Phone:{' '}
+            <a
+              href={`tel:${vehicle.driver?.phone?.replace(/[^0-9+]/g, '')}`}
+              style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}
+            >
+              {vehicle.driver?.phone}
+            </a>
+          </div>
+          {vehicle.driver?.conductor && (
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              Cond: {vehicle.driver.conductor.name} ({vehicle.driver.conductor.phone})
+            </div>
+          )}
         </div>
       </div>
 
       <div className="stat-card">
-        <div className="stat-card__label">Speed & Service</div>
-        <div className="stat-card__value">{Math.round(busState.speed)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
+        <div className="stat-card__label">Speed & Terrain Cap</div>
+        <div className="stat-card__value">{Math.round(busState.speed || 0)} <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 400 }}>{t('kmh')}</span></div>
         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
           {vehicle.serviceClass || 'HRTC Service'}
         </div>
       </div>
+
+      <div className="stat-card">
+        <div className="stat-card__label">Altitude & Slope</div>
+        <div className="stat-card__value" style={{ color: '#0d9488', fontSize: 'var(--font-size-lg)' }}>
+          ⛰️ {busState.elevationMeters || 1500} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>m.a.s.l.</span>
+        </div>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 600, marginTop: '2px' }}>
+          {busState.gradientLabel || '═ Level Road'}
+        </div>
+      </div>
+
       <div className="stat-card">
         <div className="stat-card__label">{t('lastUpdated')}</div>
         <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: isSignalLost ? 'var(--color-warning)' : 'var(--color-success)' }}>
           {pingAge != null ? (pingAge < 60 ? `${pingAge}${t('secondsAgo')}` : `${Math.round(pingAge / 60)}${t('minutesAgo')}`) : '—'}
         </div>
         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-          GPS Tracked
+          Real GPS Telemetry
         </div>
       </div>
     </div>

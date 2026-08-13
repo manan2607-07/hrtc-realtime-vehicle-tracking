@@ -196,14 +196,15 @@ useEffect(() => {
     });
 
     const popupHtml = `
-      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 2px 4px; min-width: 170px;">
+      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 2px 4px; min-width: 180px;">
         <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 2px;">
           ${bus.busNumber || bus.id} ${bus.registrationNo ? `<span style="color: #64748b; font-weight: 500;">(${bus.registrationNo})</span>` : ''}
         </div>
         ${bus.routeName ? `<div style="font-size: 11px; color: #2563eb; font-weight: 600; margin-bottom: 4px;">${bus.routeName}</div>` : ''}
-        <div style="font-size: 11px; color: #334155; margin-bottom: 2px;">
-          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Status:</strong> <span style="text-transform: capitalize; color: ${bus.status === 'running' ? '#16a34a' : bus.status === 'delayed' ? '#d97706' : '#dc2626'}; font-weight: 600;">${bus.status || 'running'}</span>
+        <div style="font-size: 11px; color: #334155; margin-bottom: 3px;">
+          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Alt:</strong> <span style="color: #0d9488; font-weight: 700;">⛰️ ${bus.elevationMeters ? `${bus.elevationMeters}m` : '1500m'}</span>
         </div>
+        ${bus.gradientLabel ? `<div style="font-size: 10px; color: #475569; font-weight: 600; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; display: inline-block; margin-bottom: 3px;">${bus.gradientLabel}</div>` : ''}
         ${bus.driverName ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Driver: ${bus.driverName}</div>` : ''}
       </div>
     `;

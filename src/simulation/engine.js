@@ -148,6 +148,37 @@ function initBusStates() {
 }
 
 /**
+ * Calculate authentic Himachal Pradesh elevation in meters above sea level (m.a.s.l.)
+ */
+export function getElevationForPosition(routeId, lat, lng) {
+  const route = ROUTES.find(r => r.id === routeId);
+  if (!route || !route.stops || route.stops.length === 0) return 1500;
+
+  let minDist1 = Infinity, minDist2 = Infinity;
+  let stop1 = route.stops[0], stop2 = route.stops[0];
+
+  for (const s of route.stops) {
+    const d = Math.abs(lat - s.lat) + Math.abs(lng - s.lng);
+    if (d < minDist1) {
+      minDist2 = minDist1;
+      stop2 = stop1;
+      minDist1 = d;
+      stop1 = s;
+    } else if (d < minDist2) {
+      minDist2 = d;
+      stop2 = s;
+    }
+  }
+
+  const e1 = stop1.elevationMeters || 1500;
+  const e2 = stop2.elevationMeters || 1500;
+
+  if (minDist1 + minDist2 === 0) return e1;
+  const ratio = minDist1 / (minDist1 + minDist2);
+  return Math.round(e1 * (1 - ratio) + e2 * ratio);
+}
+
+/**
  * Advance one bus smoothly by exact meters traveled in tick
  */
 function tickBus(busState, isTouristSeason) {
@@ -155,6 +186,28 @@ function tickBus(busState, isTouristSeason) {
   if (!route) return busState;
 
   const newState = { ...busState };
+
+  // Calculate real-time altitude telemetry (m.a.s.l.)
+  const elevationMeters = getElevationForPosition(newState.routeId, newState.lat, newState.lng);
+  const prevElevation = newState.elevationMeters || elevationMeters;
+  const elevDiff = elevationMeters - prevElevation;
+
+  let gradientType = 'flat';
+  let gradientLabel = `⛰️ ${elevationMeters} m.a.s.l.`;
+
+  if (elevDiff > 1) {
+    gradientType = 'climb';
+    gradientLabel = `▲ Hill Climb (+${Math.min(10, Math.max(3, Math.round(elevDiff * 2)))}%)`;
+  } else if (elevDiff < -1) {
+    gradientType = 'descent';
+    gradientLabel = `▼ Mountain Descent (${Math.max(-10, Math.min(-3, Math.round(elevDiff * 2)))}%)`;
+  } else if (elevationMeters > 2000) {
+    gradientLabel = `⛰️ High Himalayan Ridge (${elevationMeters}m)`;
+  }
+
+  newState.elevationMeters = elevationMeters;
+  newState.gradientType = gradientType;
+  newState.gradientLabel = gradientLabel;
 
   // If bus is being controlled by real driver device GPS stream, compute ETAs and return
   if (newState.isRealDeviceGps) {
@@ -183,7 +236,7 @@ function tickBus(busState, isTouristSeason) {
   // Use interpolated speeds for dense waypoints if available
   const speeds = roadSegmentSpeeds[busState.routeId]?.[seasonKey] || route.segmentSpeeds[seasonKey];
   const segIdx = Math.min(newState.waypointIdx, speeds.length - 1);
-  const routeTargetSpeed = speeds[segIdx] || 40;
+  const routeTargetSpeed = speeds[segIdx] || 35;
 
   // Check near stop for gentle station approach slowing (down to ~25 km/h, never 0)
   const nearStop = route.stops.some(s => {
@@ -191,21 +244,36 @@ function tickBus(busState, isTouristSeason) {
     return d < 0.0006; // ~60m
   });
 
-  const targetSpeed = nearStop ? Math.max(25, Math.min(routeTargetSpeed, 30)) : routeTargetSpeed;
+  const targetSpeed = nearStop ? Math.max(22, Math.min(routeTargetSpeed, 28)) : routeTargetSpeed;
 
   // Smooth, realistic speed interpolation matching authentic route physics
-  const base = (newState.speed && newState.speed >= 20) ? newState.speed : targetSpeed;
+  const base = (newState.speed && newState.speed >= 18) ? newState.speed : targetSpeed;
   const currentSpeed = base * 0.8 + targetSpeed * 0.2;
 
-  // Enforce authentic realistic moving speed (minimum 20 km/h for running/delayed/signal-lost buses)
-  let finalSpeed = Math.max(20, Math.round(currentSpeed * 10) / 10);
+  // Enforce terrain-aware speed caps matching Himachal Pradesh topography:
+  // - High Altitude (>2000m): Max 28-34 km/h
+  // - Steep Uphill Climbs: Max 24-28 km/h
+  // - Low Valleys / Plains (<500m): Max 58-65 km/h
+  let terrainCap = 42;
+  if (elevationMeters > 2000) {
+    terrainCap = 34;
+  } else if (elevationMeters < 500) {
+    terrainCap = 65;
+  }
+
+  if (gradientType === 'climb') {
+    terrainCap = Math.min(terrainCap, 28);
+  }
+
+  let finalSpeed = Math.min(currentSpeed, terrainCap);
+  finalSpeed = Math.max(finalSpeed, 18); // Minimum realistic moving speed
 
   // If bus is delayed due to traffic/roadwork, move at a realistic slower crawl speed (~75% of route speed), NEVER 0
   if (newState.status === VEHICLE_STATUS.DELAYED) {
-    finalSpeed = Math.max(18, Math.round(finalSpeed * 0.75 * 10) / 10);
+    finalSpeed = Math.max(16, Math.round(finalSpeed * 0.75 * 10) / 10);
   }
 
-  newState.speed = finalSpeed;
+  newState.speed = Math.round(finalSpeed * 10) / 10;
 
   // Calculate physical distance traveled in this 2s tick (meters)
   const metersPerSec = (newState.speed * 1000) / 3600;
