@@ -201,10 +201,9 @@ useEffect(() => {
           ${bus.busNumber || bus.id} ${bus.registrationNo ? `<span style="color: #64748b; font-weight: 500;">(${bus.registrationNo})</span>` : ''}
         </div>
         ${bus.routeName ? `<div style="font-size: 11px; color: #2563eb; font-weight: 600; margin-bottom: 4px;">${bus.routeName}</div>` : ''}
-        <div style="font-size: 11px; color: #334155; margin-bottom: 3px;">
-          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Alt:</strong> <span style="color: #0d9488; font-weight: 700;">⛰️ ${bus.elevationMeters ? `${bus.elevationMeters}m` : '1500m'}</span>
+        <div style="font-size: 11px; color: #334155; margin-bottom: 2px;">
+          <strong>Speed:</strong> ${Math.round(bus.speed || 0)} km/h &nbsp;|&nbsp; <strong>Altitude:</strong> <span style="color: #0d9488; font-weight: 700;">${bus.elevationMeters ? `${bus.elevationMeters}` : '1500'} m.a.s.l.</span>
         </div>
-        ${bus.gradientLabel ? `<div style="font-size: 10px; color: #475569; font-weight: 600; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; display: inline-block; margin-bottom: 3px;">${bus.gradientLabel}</div>` : ''}
         ${bus.driverName ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Driver: ${bus.driverName}</div>` : ''}
       </div>
     `;

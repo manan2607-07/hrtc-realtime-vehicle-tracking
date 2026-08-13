@@ -193,21 +193,14 @@ function tickBus(busState, isTouristSeason) {
   const elevDiff = elevationMeters - prevElevation;
 
   let gradientType = 'flat';
-  let gradientLabel = `⛰️ ${elevationMeters} m.a.s.l.`;
-
   if (elevDiff > 1) {
     gradientType = 'climb';
-    gradientLabel = `▲ Hill Climb (+${Math.min(10, Math.max(3, Math.round(elevDiff * 2)))}%)`;
   } else if (elevDiff < -1) {
     gradientType = 'descent';
-    gradientLabel = `▼ Mountain Descent (${Math.max(-10, Math.min(-3, Math.round(elevDiff * 2)))}%)`;
-  } else if (elevationMeters > 2000) {
-    gradientLabel = `⛰️ High Himalayan Ridge (${elevationMeters}m)`;
   }
 
   newState.elevationMeters = elevationMeters;
   newState.gradientType = gradientType;
-  newState.gradientLabel = gradientLabel;
 
   // If bus is being controlled by real driver device GPS stream, compute ETAs and return
   if (newState.isRealDeviceGps) {

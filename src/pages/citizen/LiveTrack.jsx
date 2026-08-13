@@ -189,12 +189,12 @@ return (
       </div>
 
       <div className="stat-card">
-        <div className="stat-card__label">Altitude & Slope</div>
-        <div className="stat-card__value" style={{ color: '#0d9488', fontSize: 'var(--font-size-lg)' }}>
-          ⛰️ {busState.elevationMeters || 1500} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>m.a.s.l.</span>
+        <div className="stat-card__label">Altitude</div>
+        <div className="stat-card__value" style={{ color: '#0d9488', fontSize: 'var(--font-size-xl)' }}>
+          {busState.elevationMeters || 1500} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>m.a.s.l.</span>
         </div>
-        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 600, marginTop: '2px' }}>
-          {busState.gradientLabel || '═ Level Road'}
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          Elevation Above Sea Level
         </div>
       </div>
 
