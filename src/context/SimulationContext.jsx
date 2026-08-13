@@ -25,17 +25,12 @@ export function SimulationProvider({ children }) {
 
     sim.start();
 
-    // Fetch road-following geometries from OSRM and inject into simulation
-    fetchAllRouteGeometries().then(geometries => {
-      if (geometries && Object.keys(geometries).length > 0) {
-        // Inject each route's dense waypoints into the simulation engine
-        for (const [routeId, waypoints] of Object.entries(geometries)) {
-          sim.setRouteGeometry(routeId, waypoints);
-        }
-        // Also expose the geometries for map display
-        setRouteGeometries(geometries);
-        console.log(`[HRTC] Road geometries loaded for ${Object.keys(geometries).length} routes`);
-      }
+    // Fetch road-following geometries from OSRM and inject into simulation immediately as each route loads
+    fetchAllRouteGeometries((routeId, waypoints) => {
+      sim.setRouteGeometry(routeId, waypoints);
+      setRouteGeometries(prev => ({ ...prev, [routeId]: waypoints }));
+    }).then(geometries => {
+      console.log(`[HRTC] All road geometries loaded for ${Object.keys(geometries || {}).length} routes`);
     }).catch(err => {
       console.warn('[HRTC] Failed to fetch road geometries, using straight-line fallback:', err);
     });

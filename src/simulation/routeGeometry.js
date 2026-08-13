@@ -177,30 +177,26 @@ export async function fetchRouteGeometry(routeId) {
  * Fetch road geometries for ALL routes in parallel (with staggered start).
  * Returns a Map of routeId → [lat, lng][].
  */
-export async function fetchAllRouteGeometries() {
+export async function fetchAllRouteGeometries(onEachRouteLoaded = null) {
   const geometries = {};
 
-  // Stagger requests to avoid hammering the free API
-  const results = [];
-  for (let i = 0; i < ROUTES.length; i++) {
-    results.push(
-      new Promise(resolve => {
-        setTimeout(async () => {
-          const routeId = ROUTES[i].id;
-          const geo = await fetchRouteGeometry(routeId);
-          resolve({ routeId, geo });
-        }, i * 500); // 500ms stagger between routes
-      })
-    );
-  }
-
-  const settled = await Promise.all(results);
-  for (const { routeId, geo } of settled) {
-    if (geo) {
-      geometries[routeId] = geo;
+  // Fetch all routes with immediate per-route callbacks
+  const promises = ROUTES.map(async (route, i) => {
+    try {
+      if (i > 0) await new Promise(r => setTimeout(r, i * 100));
+      const geo = await fetchRouteGeometry(route.id);
+      if (geo && geo.length >= 2) {
+        geometries[route.id] = geo;
+        if (onEachRouteLoaded) {
+          onEachRouteLoaded(route.id, geo);
+        }
+      }
+    } catch (err) {
+      console.warn(`[RouteGeometry] Error fetching ${route.id}:`, err);
     }
-  }
+  });
 
+  await Promise.all(promises);
   return geometries;
 }
 

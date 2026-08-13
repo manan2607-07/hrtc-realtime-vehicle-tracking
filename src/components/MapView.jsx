@@ -176,7 +176,7 @@ useEffect(() => {
 
     const iconHtml = `
       <div class="bus-marker-container ${statusClass} ${isSelected ? 'bus-marker-container--selected' : ''}">
-        <div class="bus-marker-heading-wrapper" style="transform: rotate(${heading}deg);">
+        <div class="bus-marker-heading-wrapper">
           ${bus.status === 'running' || bus.status === 'delayed' ? '<div class="bus-marker-pulse"></div>' : ''}
           <div class="bus-marker-badge" style="${badgeStyle}">
             <svg class="bus-marker-svg" viewBox="0 0 24 24" width="20" height="20" fill="white">
@@ -212,15 +212,6 @@ useEffect(() => {
       // Update existing marker position smoothly without destroying DOM node
       const marker = busMarkersRef.current[bus.id];
       marker.setLatLng([bus.lat, bus.lng]);
-
-      // Rotate heading wrapper directly in DOM for max performance
-      const iconEl = marker.getElement();
-      if (iconEl) {
-        const headingEl = iconEl.querySelector('.bus-marker-heading-wrapper');
-        if (headingEl) {
-          headingEl.style.transform = `rotate(${heading}deg)`;
-        }
-      }
 
       // Only re-set full icon if status or selection state changed
       const statusKey = `${bus.status}-${isSelected}-${busNum}`;
